@@ -26,7 +26,8 @@ export default async function AlbumPage({
           <p className="text-gray-400 mt-2">
             {album.artists.map((a: any) => a.name).join(", ")} •{" "}
             {album.release_date.slice(0, 4)} • {album.total_tracks}{" "}
-            {album.total_tracks === 1 ? "track" : "tracks"}
+            {album.total_tracks === 1 ? "track" : "tracks"}{" "}
+            {/* Says tracks unless it is a single. */}
           </p>
         </div>
       </div>
@@ -36,7 +37,7 @@ export default async function AlbumPage({
           {album.tracks.items.map((track: any, index: number) => (
             <li
               key={track.id}
-              className="py-4 flex justify-between items-center hover:bg-gray-800 rounded px-2 transition"
+              className="py-4 flex justify-between items-center hover:bg-gray-700 rounded px-2 transition-colors duration-200"
             >
               <div className="flex flex-col space-y-1">
                 <div className="flex items-center space-x-2">
