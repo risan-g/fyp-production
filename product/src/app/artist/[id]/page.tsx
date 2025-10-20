@@ -4,7 +4,7 @@ import { fetchSpotifyData } from "@/lib/spotify";
 
 async function fetchAllArtistAlbums(artistId: string) {
   let allAlbums: any[] = [];
-  let nextUrl = `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single,appears_on,compilation&limit=50`;
+  let nextUrl = `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single&limit=50`;
 
   while (nextUrl) {
     const data = await fetchSpotifyData(nextUrl);
