@@ -4,7 +4,7 @@ import { fetchSpotifyData } from "@/lib/spotify";
 
 async function fetchAllArtistAlbums(artistId: string) {
   let allAlbums: any[] = [];
-  let nextUrl = `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single&limit=50`;
+  let nextUrl = `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single,compilation&limit=50`;
 
   while (nextUrl) {
     const data = await fetchSpotifyData(nextUrl);
@@ -61,17 +61,17 @@ export default async function ArtistPage({
                 <Link
                   key={album.id}
                   href={`/album/${album.id}`}
-                  className="border border-gray-700 rounded overflow-hidden hover:shadow-lg hover:scale-105 transition-transform"
+                  className="bg-purple-900 rounded-2xl overflow-hidden hover:shadow-xl hover:scale-105 transition-transform"
                 >
                   {album.images[0] && (
                     <img
                       src={album.images[0].url}
                       alt={album.name}
-                      className="w-full h-48 object-cover"
+                      className="aspect-square w-full object-cover rounded-5xl"
                     />
                   )}
-                  <div className="p-2">
-                    <p className="text-sm font-medium">{album.name}</p>
+                  <div className="p-3">
+                    <p className="text-sm font-medium truncate">{album.name}</p>
                     <p className="text-xs text-gray-400">
                       {album.release_date}
                     </p>
