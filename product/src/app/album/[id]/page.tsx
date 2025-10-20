@@ -1,4 +1,5 @@
 import { fetchSpotifyData } from "@/lib/spotify";
+import ArtistLink from "@/components/ArtistLink";
 
 export default async function AlbumPage({
   params,
@@ -24,10 +25,9 @@ export default async function AlbumPage({
         <div>
           <h1 className="text-3xl font-bold">{album.name}</h1>
           <p className="text-gray-400 mt-2">
-            {album.artists.map((a: any) => a.name).join(", ")} •{" "}
+            <ArtistLink artists={album.artists} /> •{" "}
             {album.release_date.slice(0, 4)} • {album.total_tracks}{" "}
-            {album.total_tracks === 1 ? "track" : "tracks"}{" "}
-            {/* Says tracks unless it is a single. */}
+            {album.total_tracks === 1 ? "track" : "tracks"}
           </p>
         </div>
       </div>
@@ -50,7 +50,7 @@ export default async function AlbumPage({
                   )}
                 </div>
                 <div className="text-blue-400 text-sm">
-                  {track.artists.map((a: any) => a.name).join(", ")}
+                  <ArtistLink artists={track.artists} />
                 </div>
               </div>
               <span className="text-gray-400 text-sm">
