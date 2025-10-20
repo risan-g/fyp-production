@@ -6,6 +6,12 @@
 
 #### Supervisor : Christos Dexiades
 
+### [2025-10-20] MONDAY
+
+- Allowed the ability for users to click on an artists work and be shown the tracklist.
+- Clicking on track level artists and main artist leads to their discography.
+- Decided to get rid of 'featured on' work by artist. Will look to find a way to neatly fit the artists's discography page.
+
 ### [2025-10-19] SUNDAY
 
 - Caught up on diary.md, updating past work from notes in my physical diary.
