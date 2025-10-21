@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchSpotifyData } from "@/lib/spotify";
+import DiscographySection from "@/components/DiscographySection";
 
 async function fetchAllArtistAlbums(artistId: string) {
   let allAlbums: any[] = [];
@@ -32,56 +33,37 @@ export default async function ArtistPage({
     fetchArtist(id),
     fetchAllArtistAlbums(id),
   ]);
+
   if (!artist || !albums) notFound();
 
   const uniqueAlbums = Array.from(
-    new Map(albums.map((a) => [a.name.toLowerCase(), a])).values()
+    new Map(albums.map((a) => [a.id, a])).values()
   );
+
+  const epFilter = (album: any) =>
+    album.album_type === "single" &&
+    album.total_tracks > 3 &&
+    album.total_tracks <= 7;
+
+  const singleFilter = (album: any) => album.album_type === "single";
 
   const albumsGroup = {
     album: uniqueAlbums.filter((a) => a.album_type === "album"),
-    single: uniqueAlbums.filter((a) => a.album_type === "single"),
+    ep: uniqueAlbums.filter(epFilter),
+    single: uniqueAlbums.filter(singleFilter),
     compilation: uniqueAlbums.filter((a) => a.album_type === "compilation"),
   };
 
   return (
     <div className="p-8 bg-black text-white min-h-screen">
       <h1 className="text-3xl font-bold mb-6">{artist.name}</h1>
-
-      {Object.entries(albumsGroup).map(([groupName, items]) => (
-        <div key={groupName} className="mb-8">
-          <h2 className="text-xl mb-3 capitalize">
-            {groupName.replace("_", " ")}
-          </h2>
-          {items.length === 0 ? (
-            <p className="text-gray-400">No {groupName} found.</p>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {items.map((album: any) => (
-                <Link
-                  key={album.id}
-                  href={`/album/${album.id}`}
-                  className="bg-purple-900 rounded-2xl overflow-hidden hover:shadow-xl hover:scale-105 transition-transform"
-                >
-                  {album.images[0] && (
-                    <img
-                      src={album.images[0].url}
-                      alt={album.name}
-                      className="aspect-square w-full object-cover rounded-5xl"
-                    />
-                  )}
-                  <div className="p-3">
-                    <p className="text-sm font-medium truncate">{album.name}</p>
-                    <p className="text-xs text-gray-400">
-                      {album.release_date}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
+      <DiscographySection title="Albums" items={albumsGroup.album} />
+      <DiscographySection title="EPs" items={albumsGroup.ep} />
+      <DiscographySection title="Singles" items={albumsGroup.single} />
+      <DiscographySection
+        title="Compilations"
+        items={albumsGroup.compilation}
+      />
     </div>
   );
 }
