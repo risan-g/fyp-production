@@ -6,6 +6,10 @@
 
 #### Supervisor : Christos Dexiades
 
+### [2025-10-21] TUESDAY
+
+- Updated artist discography layout to limit initial view to five recent albums/singles/EPs, adding a ‘Show All’ toggle for expanded display.
+
 ### [2025-10-20] MONDAY
 
 - Allowed the ability for users to click on an artists work and be shown the tracklist.
