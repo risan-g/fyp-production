@@ -53,11 +53,20 @@ export default function SearchBar() {
           {results.map((item: any) => (
             <li
               key={item.id + item.type}
-              className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+              className="flex items-center px-4 py-2 hover:bg-gray-200 cursor-pointer space-x-3"
               onMouseDown={() => handleSelect(item)}
             >
-              <span className="font-bold">{item.name}</span>{" "}
-              <span className="text-sm text-gray-500">({item.type})</span>
+              {item.images?.[0]?.url && (
+                <img
+                  src={item.images[0].url}
+                  alt={item.name}
+                  className="w-8 h-8 object-cover rounded"
+                />
+              )}
+              <div className="flex flex-col">
+                <span className="font-medium">{item.name}</span>
+                <span className="text-xs text-gray-500">{item.type}</span>
+              </div>
             </li>
           ))}
         </ul>
