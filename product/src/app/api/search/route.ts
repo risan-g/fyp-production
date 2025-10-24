@@ -10,20 +10,47 @@ export async function GET(req: Request) {
 
   try {
     const token = await getSpotifyToken();
-    const res = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-        query
-      )}&type=artist&limit=8`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
+    const [artistRes, albumRes, singleRes] = await Promise.all([
+      fetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(
+          query
+        )}&type=artist&limit=5`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      ),
+      fetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(
+          query
+        )}&type=album&limit=5`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      ),
+      fetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(
+          query
+        )}&type=album&limit=5`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      ),
+    ]);
+
+    const [artistData, albumData, singleData] = await Promise.all([
+      artistRes.json(),
+      albumRes.json(),
+      singleRes.json(),
+    ]);
+
+    const singles = (singleData.albums?.items || []).filter(
+      (a: any) => a.album_type === "single"
     );
 
-    const data = await res.json();
+    const artists = artistData.artists?.items || [];
+    const albums = albumData.albums?.items || [];
 
-    const artists = data.artists?.items || [];
+    const results = [
+      ...artists.map((a: any) => ({ ...a, type: "artist" })),
+      ...albums.map((a: any) => ({ ...a, type: "album" })),
+      ...singles.map((a: any) => ({ ...a, type: "single" })),
+    ];
 
-    return new Response(JSON.stringify(artists), {
+    return new Response(JSON.stringify(results), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });

@@ -8,7 +8,6 @@ export default function SearchBar() {
   const [showDropdown, setShowDropdown] = useState(false);
   const router = useRouter();
 
-  // Debounced search effect
   useEffect(() => {
     if (!query) {
       setResults([]);
@@ -30,12 +29,12 @@ export default function SearchBar() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Navigate to artist page
-  function handleSelect(artistId: string) {
+  const handleSelect = (item: any) => {
     setShowDropdown(false);
     setQuery("");
-    router.push(`/artist/${artistId}`);
-  }
+    if (item.type === "artist") router.push(`/artist/${item.id}`);
+    else router.push(`/album/${item.id}`);
+  };
 
   return (
     <div className="relative w-full">
@@ -43,7 +42,7 @@ export default function SearchBar() {
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search Artist"
+        placeholder="Search artist, album, single..."
         className="border rounded px-4 py-2 w-full"
         onFocus={() => results.length > 0 && setShowDropdown(true)}
         onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
@@ -51,13 +50,14 @@ export default function SearchBar() {
 
       {showDropdown && results.length > 0 && (
         <ul className="absolute top-full left-0 w-full bg-white shadow-md z-50 max-h-60 overflow-y-auto">
-          {results.map((artist: any) => (
+          {results.map((item: any) => (
             <li
-              key={artist.id}
+              key={item.id + item.type}
               className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
-              onMouseDown={() => handleSelect(artist.id)}
+              onMouseDown={() => handleSelect(item)}
             >
-              {artist.name}
+              <span className="font-bold">{item.name}</span>{" "}
+              <span className="text-sm text-gray-500">({item.type})</span>
             </li>
           ))}
         </ul>
