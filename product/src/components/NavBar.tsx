@@ -142,12 +142,18 @@ export default function NavBar() {
 
             {showUserMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                <div className="px-4 py-2 border-b border-gray-200">
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    router.push("/profile");
+                  }}
+                  className="w-full px-4 py-2 border-b border-gray-200 hover:bg-gray-50 text-left"
+                >
                   <p className="text-sm text-gray-500">Signed in as</p>
                   <p className="text-sm font-medium truncate">
                     @{username || "$$$$$"}
                   </p>
-                </div>
+                </button>
                 <button
                   onClick={handleSignOut}
                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
