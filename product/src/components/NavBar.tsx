@@ -1,12 +1,37 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { User } from "@supabase/supabase-js";
 
 export default function NavBar() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const supabase = createClient();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setShowUserMenu(false);
+    router.refresh();
+  };
 
   useEffect(() => {
     if (!query) {
@@ -83,13 +108,38 @@ export default function NavBar() {
         </div>
       </div>
 
-      <div>
-        <button
-          className="bg-black text-white px-4 py-2 rounded"
-          onClick={() => alert("Sign In clicked!")}
-        >
-          Sign In
-        </button>
+      <div className="relative">
+        {user ? (
+          <div>
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center hover:bg-blue-600 transition-colors"
+              aria-label="User menu"
+            ></button>
+
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200 min-w-max">
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <p className="text-sm text-gray-500">Email</p>
+                  <p className="text-sm font-medium">{user.email}</p>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition-colors"
+            onClick={() => router.push("/sign-in")}
+          >
+            Sign In
+          </button>
+        )}
       </div>
     </header>
   );
