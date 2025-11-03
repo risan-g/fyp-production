@@ -10,26 +10,49 @@ export default function NavBar() {
   const [results, setResults] = useState<any[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchUsername(session.user.id);
+      }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+
+      if (session?.user) {
+        fetchUsername(session.user.id);
+      } else {
+        setUsername(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  const fetchUsername = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", userId)
+      .single();
+
+    if (data) {
+      setUsername(data.username);
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setShowUserMenu(false);
+    setUsername(null);
     router.refresh();
   };
 
@@ -118,10 +141,12 @@ export default function NavBar() {
             ></button>
 
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200 min-w-max">
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
                 <div className="px-4 py-2 border-b border-gray-200">
-                  <p className="text-sm text-gray-500">Email</p>
-                  <p className="text-sm font-medium">{user.email}</p>
+                  <p className="text-sm text-gray-500">Signed in as</p>
+                  <p className="text-sm font-medium truncate">
+                    @{username || "$$$$$"}
+                  </p>
                 </div>
                 <button
                   onClick={handleSignOut}
