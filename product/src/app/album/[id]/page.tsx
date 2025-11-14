@@ -1,5 +1,7 @@
 import { fetchSpotifyData } from "@/lib/spotify";
 import ArtistLink from "@/components/ArtistLink";
+import Rating from "@/components/Rating";
+import AlbumReview from "@/components/Review";
 
 export default async function AlbumPage({
   params,
