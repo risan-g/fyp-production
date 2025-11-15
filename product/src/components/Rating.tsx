@@ -1,6 +1,8 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+
 interface RatingProps {
   albumId: string;
   albumName: string;
@@ -33,6 +35,40 @@ export default function Rating({
   const isDragging = useRef(false);
   const sliderWrapperRef = useRef<HTMLDivElement>(null);
   const knobRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const supabase = createClient();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadUserRating();
+  }, [albumId]);
+
+  const loadUserRating = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+
+      if (user) {
+        const { data: userRating } = await supabase
+          .from("album_ratings")
+          .select("rating")
+          .eq("user_id", user.id)
+          .eq("album_id", albumId)
+          .single();
+
+        if (userRating) {
+          setRating(Number(userRating.rating));
+        }
+      }
+    } catch (err: any) {
+      console.error("Error loading user rating:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const updateRatingFromY = (clientY: number) => {
     if (!sliderWrapperRef.current) return;
@@ -88,6 +124,14 @@ export default function Rating({
       setRating(finalValue);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="bg-black-900 rounded-lg p-4 flex flex-col items-center h-[520px] justify-center">
+        <div className="text-neutral-500">Loading your rating...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-black-900 rounded-lg p-4 flex flex-col items-center">
