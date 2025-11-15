@@ -1,6 +1,7 @@
 import { fetchSpotifyData } from "@/lib/spotify";
 import ArtistLink from "@/components/ArtistLink";
 import Rating from "@/components/Rating";
+import AverageRating from "@/components/AverageRating";
 
 export default async function AlbumPage({
   params,
@@ -41,18 +42,22 @@ export default async function AlbumPage({
           />
         </div>
         <div className="flex flex-col gap-8">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">{album.name}</h1>
-            <p className="text-gray-400 text-lg">
-              <ArtistLink artists={album.artists} />
-            </p>
-            <p className="text-gray-500 text-sm mt-1">
-              {album.release_date.slice(0, 4)}
-            </p>
-            <p className="text-gray-500 text-sm mt-1">
-              {album.total_tracks}{" "}
-              {album.total_tracks === 1 ? "track" : "tracks"} • {durationString}
-            </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">{album.name}</h1>
+              <p className="text-gray-400 text-lg">
+                <ArtistLink artists={album.artists} />
+              </p>
+              <p className="text-gray-500 text-sm mt-1">
+                {album.release_date.slice(0, 4)}
+              </p>
+              <p className="text-gray-500 text-sm mt-1">
+                {album.total_tracks}{" "}
+                {album.total_tracks === 1 ? "track" : "tracks"} •{" "}
+                {durationString}
+              </p>
+            </div>
+            <AverageRating albumId={album.id} />
           </div>
           <div>
             <ul className="divide-y divide-gray-800">
@@ -68,7 +73,7 @@ export default async function AlbumPage({
                       </span>
                       <span className="truncate">{track.name}</span>
                       {track.explicit && (
-                        <span className="text-xs bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded flex-shrink-0">
+                        <span className="text-xs bg-purple-600 text-white px-1.5 py-0.5 rounded flex-shrink-0">
                           E
                         </span>
                       )}
