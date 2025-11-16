@@ -39,6 +39,9 @@ export default function Rating({
   const supabase = createClient();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [originalRating, setOriginalRating] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     loadUserRating();
@@ -60,11 +63,14 @@ export default function Rating({
           .single();
 
         if (userRating) {
-          setRating(Number(userRating.rating));
+          const savedRating = Number(userRating.rating);
+          setRating(savedRating);
+          setOriginalRating(savedRating);
         }
       }
     } catch (err: any) {
       console.error("Error loading user rating:", err);
+      setError("Failed to load your rating.");
     } finally {
       setLoading(false);
     }
@@ -83,6 +89,7 @@ export default function Rating({
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (!user || saving) return;
     isDragging.current = true;
     if (knobRef.current) {
       knobRef.current.style.cursor = "grabbing";
@@ -116,6 +123,7 @@ export default function Rating({
   };
 
   const handleClickTrack = (e: React.MouseEvent) => {
+    if (!user || saving) return;
     if (e.target === knobRef.current) return;
 
     const value = updateRatingFromY(e.clientY);
@@ -125,6 +133,57 @@ export default function Rating({
     }
   };
 
+  const handleSaveRating = async () => {
+    if (!user) {
+      router.push("/sign-in");
+      return;
+    }
+    if (rating === originalRating) return;
+
+    setSaving(true);
+    setError("");
+
+    try {
+      const { data: existing } = await supabase
+        .from("album_ratings")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("album_id", albumId)
+        .single();
+
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from("album_ratings")
+          .update({ rating, updated_at: new Date().toISOString() })
+          .eq("id", existing.id);
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("album_ratings")
+          .insert({
+            user_id: user.id,
+            album_id: albumId,
+            album_name: albumName,
+            artist_name: artistName,
+            rating,
+          });
+        if (insertError) throw insertError;
+      }
+
+      setOriginalRating(rating);
+    } catch (err: any) {
+      console.error("Error saving rating:", err);
+      setError(err.message || "Failed to save rating.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setRating(originalRating);
+    setError("");
+  };
+
   if (loading) {
     return (
       <div className="bg-black-900 rounded-lg p-4 flex flex-col items-center h-[520px] justify-center">
@@ -132,10 +191,14 @@ export default function Rating({
       </div>
     );
   }
+  const hasChanged = rating !== originalRating;
 
   return (
     <div className="bg-black-900 rounded-lg p-4 flex flex-col items-center">
       <div className="mb-10 h-28 flex flex-col justify-center items-center">
+        <label className="block text-xs text-neutral-500 mb-2">
+          {user ? "Your Rating" : ""}
+        </label>
         <div className="text-7xl font-bold text-white leading-none">
           {rating}
         </div>
@@ -157,10 +220,48 @@ export default function Rating({
         </div>
         <div
           ref={knobRef}
-          className="w-12 h-5 bg-white absolute left-1/2 -translate-x-1/2 -translate-y-1/2 cursor-grab border-2 border-white z-10"
+          className={`w-12 h-5 bg-white absolute left-1/2 -translate-x-1/2 -translate-y-1/2 border-2 border-white z-10 ${
+            user ? "cursor-grab" : "cursor-not-allowed opacity-50"
+          }`}
           style={{ top: `${100 - rating}%` }}
           onMouseDown={handleMouseDown}
         />
+      </div>
+      <div className="mt-10 flex flex-col items-center gap-2 h-20">
+        {user ? (
+          <>
+            {hasChanged && (
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleCancel}
+                  disabled={saving}
+                  className="px-6 py-2 bg-neutral-700 text-white font-medium rounded-lg hover:bg-neutral-600 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveRating}
+                  disabled={saving}
+                  className="px-6 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-neutral-700"
+                >
+                  {saving ? "Saving..." : "Confirm"}
+                </button>
+              </div>
+            )}
+
+            {error && <div className="text-red-500 text-xs mt-2">{error}</div>}
+          </>
+        ) : (
+          <p className="text-xs text-neutral-500 mt-2">
+            <button
+              onClick={() => router.push("/sign-in")}
+              className="text-blue-400 hover:underline"
+            >
+              Sign in
+            </button>{" "}
+            to save your rating.
+          </p>
+        )}
       </div>
     </div>
   );
