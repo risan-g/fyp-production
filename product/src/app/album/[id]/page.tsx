@@ -2,6 +2,8 @@ import { fetchSpotifyData } from "@/lib/spotify";
 import ArtistLink from "@/components/ArtistLink";
 import Rating from "@/components/Rating";
 import AverageRating from "@/components/AverageRating";
+import ReviewForm from "@/components/ReviewForm";
+import ReviewList from "@/components/ReviewList";
 
 export default async function AlbumPage({
   params,
@@ -92,6 +94,8 @@ export default async function AlbumPage({
               ))}
             </ul>
           </div>
+          <ReviewForm albumId={album.id} />
+          <ReviewList albumId={album.id} />
         </div>{" "}
       </div>{" "}
     </div>
