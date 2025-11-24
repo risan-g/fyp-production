@@ -42,6 +42,8 @@ export default async function AlbumPage({
             albumName={album.name}
             artistName={album.artists[0]?.name || "Unknown Artist"}
           />
+
+          <ReviewForm albumId={album.id} />
         </div>
         <div className="flex flex-col gap-8">
           <div className="flex justify-between items-start">
@@ -94,7 +96,6 @@ export default async function AlbumPage({
               ))}
             </ul>
           </div>
-          <ReviewForm albumId={album.id} />
           <ReviewList albumId={album.id} />
         </div>{" "}
       </div>{" "}
