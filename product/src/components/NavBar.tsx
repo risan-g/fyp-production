@@ -145,13 +145,15 @@ export default function NavBar() {
                 <button
                   onClick={() => {
                     setShowUserMenu(false);
-                    router.push("/profile");
+                    if (username) {
+                      router.push(`/profile/${username}`); // <-- UPDATED THIS LINE
+                    }
                   }}
                   className="w-full px-4 py-2 border-b border-gray-200 hover:bg-gray-50 text-left"
                 >
                   <p className="text-sm text-gray-500">Signed in as</p>
                   <p className="text-sm font-medium truncate">
-                    @{username || "$$$$$"}
+                    @{username || "..."}
                   </p>
                 </button>
                 <button
