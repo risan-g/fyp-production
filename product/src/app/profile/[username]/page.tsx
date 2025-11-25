@@ -31,7 +31,7 @@ export default async function ProfilePage({
     .select("*", { count: "exact" })
     .eq("user_id", profile.id)
     .order("rating", { ascending: false })
-    .limit(4);
+    .limit(3);
 
   const topRatings = rawRatings
     ? await Promise.all(
@@ -52,6 +52,42 @@ export default async function ProfilePage({
       )
     : [];
 
+  const { data: rawReviews } = await supabase
+    .from("album_reviews")
+    .select("*")
+    .eq("user_id", profile.id)
+    .order("created_at", { ascending: false })
+    .limit(4);
+
+  const reviews = rawReviews
+    ? await Promise.all(
+        rawReviews.map(async (review) => {
+          try {
+            const spotifyAlbum = await fetchSpotifyData(
+              `https://api.spotify.com/v1/albums/${review.album_id}`
+            );
+
+            const { data: ratingData } = await supabase
+              .from("album_ratings")
+              .select("rating")
+              .eq("user_id", profile.id)
+              .eq("album_id", review.album_id)
+              .single();
+
+            return {
+              ...review,
+              album_name: spotifyAlbum.name || review.album_name,
+              artist_name: spotifyAlbum.artists[0]?.name || review.artist_name,
+              fetched_image: spotifyAlbum.images?.[0]?.url || null,
+              rating: ratingData?.rating || null, // <--- Attach the rating
+            };
+          } catch (e) {
+            return review;
+          }
+        })
+      )
+    : [];
+
   return (
     <div className="bg-black text-white min-h-screen p-8">
       <div className="max-w-4xl mx-auto pt-24">
@@ -64,6 +100,17 @@ export default async function ProfilePage({
           </h1>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 text-xs uppercase tracking-widest font-bold">
             <span>est. {formatDate(profile.created_at)}</span>
+          </div>
+
+          <div className="flex gap-8 mt-8 text-sm text-neutral-500">
+            <span>
+              <strong className="text-white">{ratingsCount || 0}</strong>{" "}
+              Ratings
+            </span>
+            <span>
+              <strong className="text-white">{reviews?.length || 0}</strong>{" "}
+              Reviews
+            </span>
           </div>
         </div>
 
@@ -119,6 +166,67 @@ export default async function ProfilePage({
               <p className="text-neutral-600 text-sm">No ratings yet.</p>
             </div>
           )}
+        </div>
+
+        <div className="mt-16">
+          <h2 className="text-xs text-neutral-500 font-bold uppercase tracking-widest mb-6">
+            Recent Reviews
+          </h2>
+
+          <div className="space-y-4">
+            {reviews && reviews.length > 0 ? (
+              reviews.map((review) => (
+                <div
+                  key={review.id}
+                  className="group bg-neutral-900/30 border border-neutral-800 rounded-xl p-6 hover:border-neutral-600 transition-colors"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex gap-4 items-center">
+                      {review.fetched_image && (
+                        <img
+                          src={review.fetched_image}
+                          alt={review.album_name}
+                          className="w-12 h-12 rounded object-cover shadow-sm"
+                        />
+                      )}
+
+                      <div className="flex flex-col">
+                        <Link
+                          href={`/album/${review.album_id}`}
+                          className="text-lg font-bold text-white hover:underline decoration-neutral-500 underline-offset-4"
+                        >
+                          {review.album_name || "Unknown Album"}
+                        </Link>
+                        <span className="text-sm text-neutral-500 font-medium">
+                          {review.artist_name || "Unknown Artist"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-neutral-600 tabular-nums">
+                        {new Date(review.created_at).toLocaleDateString()}
+                      </span>
+
+                      {review.rating !== null && (
+                        <span className="bg-neutral-800 text-white text-xs font-bold px-2 py-1 rounded border border-neutral-700">
+                          ★ {review.rating}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="text-neutral-300 text-sm leading-relaxed whitespace-pre-wrap border-l-2 border-neutral-800 pl-4 ml-1">
+                    {review.review_text}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="py-12 text-center border border-dashed border-neutral-800 rounded-xl">
+                <p className="text-neutral-600 text-sm">No reviews yet.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
