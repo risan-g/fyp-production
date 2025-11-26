@@ -115,9 +115,17 @@ export default async function ProfilePage({
         </div>
 
         <div className="mt-16 w-full">
-          <h2 className="text-xs text-neutral-500 font-bold uppercase tracking-widest mb-6">
-            Top Rated
-          </h2>
+          <div className="flex items-end justify-between mb-6">
+            <h2 className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
+              Top Rated
+            </h2>
+            <Link
+              href={`/profile/${params.username}/ratings`}
+              className="text-xs text-neutral-500 font-bold uppercase tracking-widest hover:text-neutral-400 transition-colors flex items-center gap-1"
+            >
+              <span className="text-lg leading-none">→</span>
+            </Link>
+          </div>
 
           {topRatings && topRatings.length > 0 ? (
             <div
@@ -169,9 +177,17 @@ export default async function ProfilePage({
         </div>
 
         <div className="mt-16">
-          <h2 className="text-xs text-neutral-500 font-bold uppercase tracking-widest mb-6">
-            Recent Reviews
-          </h2>
+          <div className="flex items-end justify-between mb-6">
+            <h2 className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
+              Recent Reviews
+            </h2>
+            <Link
+              href={`/profile/${params.username}/reviews`}
+              className="text-xs text-neutral-500 font-bold uppercase tracking-widest hover:text-neutral-400 transition-colors flex items-center gap-1"
+            >
+              <span className="text-lg leading-none">→</span>
+            </Link>
+          </div>
 
           <div className="space-y-4">
             {reviews && reviews.length > 0 ? (
