@@ -3,13 +3,27 @@ import { fetchSpotifyData } from "@/lib/spotify";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
-export default async function AllRatingsPage({
-  params,
-}: {
-  params: { username: string };
+export const dynamic = "force-dynamic";
+
+const ITEMS_PER_PAGE = 20;
+
+export default async function AllRatingsPage(props: {
+  params: Promise<{ username: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
   const supabase = await createClient();
   const username = decodeURIComponent(params.username);
+
+  let currentPage = 1;
+  if (searchParams.page && !isNaN(Number(searchParams.page))) {
+    currentPage = parseInt(searchParams.page);
+    if (currentPage < 1) currentPage = 1;
+  }
+
+  const from = (currentPage - 1) * ITEMS_PER_PAGE;
+  const to = from + ITEMS_PER_PAGE - 1;
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -19,12 +33,15 @@ export default async function AllRatingsPage({
 
   if (!profile) return notFound();
 
-  const { data: rawRatings } = await supabase
+  const { data: rawRatings, count } = await supabase
     .from("album_ratings")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("user_id", profile.id)
     .order("created_at", { ascending: false })
-    .limit(50);
+    .range(from, to);
+
+  const totalRatings = count || 0;
+  const totalPages = Math.ceil(totalRatings / ITEMS_PER_PAGE);
 
   const ratings = rawRatings
     ? await Promise.all(
@@ -48,6 +65,45 @@ export default async function AllRatingsPage({
       )
     : [];
 
+  const PaginationControls = () => {
+    const hasPrev = currentPage > 1;
+    const hasNext = currentPage < totalPages;
+
+    return (
+      <div className="flex items-center justify-between border-t border-neutral-800 pt-6 mt-8 mb-8">
+        {hasPrev ? (
+          <Link
+            href={`/profile/${params.username}/ratings?page=${currentPage - 1}`}
+            className="text-sm font-bold text-white hover:text-neutral-400 transition-colors px-4 py-2 bg-neutral-900 rounded"
+          >
+            ← Previous
+          </Link>
+        ) : (
+          <span className="text-sm font-bold text-neutral-700 px-4 py-2 cursor-not-allowed">
+            ← Previous
+          </span>
+        )}
+
+        <span className="text-xs text-neutral-500 font-mono uppercase tracking-widest">
+          Page {currentPage} of {totalPages || 1}
+        </span>
+
+        {hasNext ? (
+          <Link
+            href={`/profile/${params.username}/ratings?page=${currentPage + 1}`}
+            className="text-sm font-bold text-white hover:text-neutral-400 transition-colors px-4 py-2 bg-neutral-900 rounded"
+          >
+            Next →
+          </Link>
+        ) : (
+          <span className="text-sm font-bold text-neutral-700 px-4 py-2 cursor-not-allowed">
+            Next →
+          </span>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="bg-black text-white min-h-screen p-8">
       <div className="max-w-7xl mx-auto pt-8">
@@ -64,10 +120,11 @@ export default async function AllRatingsPage({
           <div className="flex flex-col">
             <h1 className="text-4xl font-bold tracking-tight">Library</h1>
             <p className="text-neutral-500 text-sm uppercase tracking-widest font-medium mt-1">
-              Rated by {profile.username}
+              Rated by {profile.username} • {totalRatings} Total
             </p>
           </div>
         </div>
+        {totalRatings > 0 && <PaginationControls />}
 
         {ratings.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10">
@@ -114,6 +171,7 @@ export default async function AllRatingsPage({
             <p className="text-neutral-500">No ratings found.</p>
           </div>
         )}
+        {totalRatings > 0 && <PaginationControls />}
       </div>
     </div>
   );
