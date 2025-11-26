@@ -31,7 +31,7 @@ export default async function ProfilePage({
     .select("*", { count: "exact" })
     .eq("user_id", profile.id)
     .order("rating", { ascending: false })
-    .limit(3);
+    .limit(4);
 
   const topRatings = rawRatings
     ? await Promise.all(
@@ -57,7 +57,7 @@ export default async function ProfilePage({
     .select("*")
     .eq("user_id", profile.id)
     .order("created_at", { ascending: false })
-    .limit(4);
+    .limit(3);
 
   const reviews = rawReviews
     ? await Promise.all(
