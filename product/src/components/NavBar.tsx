@@ -85,9 +85,9 @@ export default function NavBar() {
   };
 
   return (
-    <header className="w-full flex items-center justify-between px-6 py-3 shadow-sm bg-white sticky top-0 z-50">
+    <header className="w-full flex items-center justify-between px-6 py-3 shadow-sm bg-black sticky top-0 z-50">
       <div
-        className="font-bold text-xl cursor-pointer"
+        className="text-white font-bold text-xl cursor-pointer"
         onClick={() => router.push("/")}
       >
         dotwv
@@ -100,7 +100,7 @@ export default function NavBar() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search artist, album, single..."
-            className="border rounded px-4 py-2 w-full"
+            className="bg-neutral-900 border border-neutral-800 rounded px-4 py-2 w-full text-white placeholder:text-neutral-500 focus:outline-none focus:border-neutral-600"
             onFocus={() => results.length > 0 && setShowDropdown(true)}
             onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
           />
