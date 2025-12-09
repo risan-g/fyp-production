@@ -45,10 +45,10 @@ export default function AverageRating({ albumId }: AverageRatingProps) {
   return (
     <div className="flex items-center gap-1 h-82">
       <div className="flex flex-col" style={{ transform: "rotate(-90deg)" }}>
-        <span className="text-base text-neutral-500 uppercase tracking-widest">
+        <span className="text-2xl text-neutral-500 uppercase tracking-widest">
           AVERAGE
         </span>
-        <span className="text-base text-neutral-500 uppercase tracking-widest">
+        <span className="text-2xl text-neutral-500 uppercase tracking-widest">
           RATING
         </span>
       </div>

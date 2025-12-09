@@ -48,14 +48,14 @@ export default async function AlbumPage({
         <div className="flex flex-col gap-8">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold mb-2">{album.name}</h1>
-              <p className="text-gray-400 text-lg">
+              <h1 className="text-6xl font-bold mb-2">{album.name}</h1>
+              <p className="text-gray-400 text-3xl">
                 <ArtistLink artists={album.artists} />
               </p>
-              <p className="text-gray-500 text-sm mt-1">
+              <p className="text-gray-500 text-lg mt-1">
                 {album.release_date.slice(0, 4)}
               </p>
-              <p className="text-gray-500 text-sm mt-1">
+              <p className="text-gray-500 text-lg mt-1">
                 {album.total_tracks}{" "}
                 {album.total_tracks === 1 ? "track" : "tracks"} •{" "}
                 {durationString}
