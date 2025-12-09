@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
+/**
+ * SignUpPage Component
+ * Handles new user registration.
+ */
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -21,6 +25,7 @@ export default function SignUpPage() {
     setError(null);
     setLoading(true);
 
+    // Enforces these to ensure the data reaching the DB triggers is clean.
     if (username.length < 3) {
       setError("Username must be at least 3 characters");
       setLoading(false);
@@ -47,19 +52,17 @@ export default function SignUpPage() {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // Create the Auth User
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            username: username,
-          },
+          data: { username },
         },
       });
 
       if (error) throw error;
-
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || "Failed to create account");
@@ -68,56 +71,62 @@ export default function SignUpPage() {
     }
   };
 
+  // Success View:
+  // Render a confirmation screen to guide the user to check their email.
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow">
-          <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-              <svg
-                className="h-6 w-6 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold">Check your email</h2>
-            <p className="mt-4 text-gray-600">
-              A confirmation link has been sent to{" "}
-              <span className="font-medium">{email}</span>
-            </p>
-            <p className="mt-2 text-sm text-gray-500">
-              Click the link in the email to verify and complete sign up.
-            </p>
-            <Link
-              href="/sign-in"
-              className="mt-6 inline-block text-black hover:underline"
+      <div className="min-h-screen flex items-center justify-center bg-black px-4 text-white">
+        <div className="max-w-md w-full space-y-8 bg-black border border-neutral-800 p-8 rounded-xl shadow-2xl text-center">
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-500/10 mb-4 border border-green-500/20">
+            <svg
+              className="h-8 w-8 text-green-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              Back to Sign In
-            </Link>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
           </div>
+          <h2 className="text-2xl font-bold">Check your email</h2>
+          <p className="mt-4 text-neutral-400">
+            A confirmation link has been sent to{" "}
+            <span className="text-white font-medium">{email}</span>
+          </p>
+          <p className="mt-2 text-sm text-neutral-500">
+            Click the link in the email to verify and complete sign up.
+          </p>
+          <Link
+            href="/sign-in"
+            className="mt-8 inline-block text-sm font-bold text-white hover:underline decoration-neutral-500 underline-offset-4"
+          >
+            ← Back to Sign In
+          </Link>
         </div>
       </div>
     );
   }
 
+  // Registration Form View
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow">
+    <div className="min-h-screen flex items-center justify-center bg-black px-4 text-white">
+      <div className="max-w-md w-full space-y-8 bg-black border border-neutral-800 p-8 rounded-xl shadow-2xl">
         <div>
-          <h2 className="text-3xl font-bold text-center">Create Account</h2>
+          <h2 className="text-3xl font-bold text-center tracking-tight">
+            Create Account
+          </h2>
+          <p className="text-center text-neutral-500 text-sm mt-2">
+            Start tracking your collection today
+          </p>
         </div>
 
         <form onSubmit={handleSignUp} className="mt-8 space-y-6">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className="bg-red-500/10 border border-red-900/50 text-red-500 px-4 py-3 rounded text-sm text-center">
               {error}
             </div>
           )}
@@ -126,9 +135,9 @@ export default function SignUpPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2"
               >
-                E M A I L
+                Email
               </label>
               <input
                 id="email"
@@ -136,16 +145,17 @@ export default function SignUpPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black"
+                className="block w-full px-4 py-3 bg-black border border-neutral-800 rounded-lg text-white placeholder-neutral-600 focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-all"
+                placeholder="name@example.com"
               />
             </div>
 
             <div>
               <label
                 htmlFor="username"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2"
               >
-                U S E R N A M E
+                Username
               </label>
               <input
                 id="username"
@@ -153,81 +163,78 @@ export default function SignUpPage() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black"
+                className="block w-full px-4 py-3 bg-black border border-neutral-800 rounded-lg text-white placeholder-neutral-600 focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-all"
                 minLength={3}
                 maxLength={10}
+                placeholder="username"
               />
-              <p className="mt-1 text-xs text-gray-500">
-                3 - 10 characters, letters, numbers and underscores only
+              <p className="mt-2 text-[10px] text-neutral-600">
+                3-10 characters, letters & numbers only.
               </p>
             </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
-              >
-                P A S S W O R D
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Must be at least 8 characters.
-              </p>
-            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2"
+                >
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full px-4 py-3 bg-black border border-neutral-800 rounded-lg text-white placeholder-neutral-600 focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-all"
+                  placeholder="••••••••"
+                />
+              </div>
 
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700"
-              >
-                C O N F I R M - P A S S W O R D
-              </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black"
-              />
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2"
+                >
+                  Confirm
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="block w-full px-4 py-3 bg-black border border-neutral-800 rounded-lg text-white placeholder-neutral-600 focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-all"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
+            <p className="text-[10px] text-neutral-600 mt-1">
+              Must be at least 8 characters.
+            </p>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-sm font-bold text-black bg-white hover:bg-neutral-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? "Creating account..." : "Create Account"}
           </button>
         </form>
 
-        <div className="text-center text-sm">
-          <p className="text-gray-600">
+        <div className="text-center text-sm pt-4 border-t border-neutral-900">
+          <p className="text-neutral-500">
             Already have an account?{" "}
             <Link
               href="/sign-in"
-              className="font-medium text-black hover:underline"
+              className="font-bold text-white hover:underline decoration-neutral-500 underline-offset-4"
             >
               Sign in here!
             </Link>
           </p>
         </div>
-
-        <button
-          type="button"
-          disabled={loading}
-          className="w-full flex justify-center py-2 px-2 border border-transparent rounded-md shadow-sm text-white bg-green-500 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Set up with Spotify
-        </button>
       </div>
     </div>
   );
