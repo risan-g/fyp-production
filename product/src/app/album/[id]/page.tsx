@@ -5,6 +5,13 @@ import AverageRating from "@/components/AverageRating";
 import ReviewForm from "@/components/ReviewForm";
 import ReviewList from "@/components/ReviewList";
 
+/**
+ * Album Detail Page (Server Component).
+ *
+ * This page fetches the specific data for an album using its ID.
+ * It displays the cover art, allows users to rate/review the album,
+ * and lists all the tracks with their durations.
+ */
 export default async function AlbumPage({
   params,
 }: {
@@ -12,10 +19,12 @@ export default async function AlbumPage({
 }) {
   const { id } = params;
 
+  // Fetch the album details.
   const album = await fetchSpotifyData(
     `https://api.spotify.com/v1/albums/${id}`
   );
 
+  // Calculate the total length of the album.
   const totalDurationMs = album.tracks.items.reduce(
     (acc: number, track: any) => acc + track.duration_ms,
     0
@@ -46,6 +55,7 @@ export default async function AlbumPage({
           <ReviewForm albumId={album.id} />
         </div>
         <div className="flex flex-col gap-8">
+          {/* Album Header & Stats */}
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-6xl font-bold mb-2">{album.name}</h1>
@@ -63,6 +73,8 @@ export default async function AlbumPage({
             </div>
             <AverageRating albumId={album.id} />
           </div>
+
+          {/* Tracklist Table */}
           <div>
             <ul className="divide-y divide-gray-800">
               {album.tracks.items.map((track: any, index: number) => (
@@ -86,6 +98,8 @@ export default async function AlbumPage({
                       <ArtistLink artists={track.artists} />
                     </div>
                   </div>
+
+                  {/* Track Duration */}
                   <span className="text-gray-500 text-sm ml-4 flex-shrink-0">
                     {Math.floor(track.duration_ms / 60000)}:
                     {String(
@@ -96,6 +110,8 @@ export default async function AlbumPage({
               ))}
             </ul>
           </div>
+
+          {/* User Reviews List */}
           <ReviewList albumId={album.id} />
         </div>{" "}
       </div>{" "}
