@@ -6,7 +6,7 @@ import ReviewForm from "@/components/ReviewForm";
 import ReviewList from "@/components/ReviewList";
 
 /**
- * Album Detail Page (Server Component).
+ * Album Page (Server Component).
  *
  * This page fetches the specific data for an album using its ID.
  * It displays the cover art, allows users to rate/review the album,

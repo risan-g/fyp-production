@@ -7,18 +7,29 @@ interface AverageRatingProps {
   albumId: string;
 }
 
+/**
+ * Average Rating Display.
+ *
+ * This component fetches every rating submitted by users for this specific album,
+ * calculates the mathematical average, and displays it as a large "Score"
+ * in the album header.
+ */
 export default function AverageRating({ albumId }: AverageRatingProps) {
   const supabase = createClient();
+
+  // State to hold the calculated score
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [totalRatings, setTotalRatings] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // Fetch the data as soon as the component loads
   useEffect(() => {
     loadAverageRating();
   }, [albumId]);
 
   const loadAverageRating = async () => {
     try {
+      // Get ALL ratings for this album from the database
       const { data: allRatings, error: ratingsError } = await supabase
         .from("album_ratings")
         .select("rating")
@@ -26,12 +37,15 @@ export default function AverageRating({ albumId }: AverageRatingProps) {
 
       if (ratingsError) throw ratingsError;
 
+      // 2. Calculate the average
       if (allRatings && allRatings.length > 0) {
         const sum = allRatings.reduce(
           (total, r) => total + Number(r.rating),
           0
         );
         const avg = sum / allRatings.length;
+
+        // Round to 1 decimal place
         setAverageRating(Math.round(avg * 10) / 10);
         setTotalRatings(allRatings.length);
       }
@@ -44,6 +58,7 @@ export default function AverageRating({ albumId }: AverageRatingProps) {
 
   return (
     <div className="flex items-center gap-1 h-82">
+      {/* Rotated 90 degrees */}
       <div className="flex flex-col" style={{ transform: "rotate(-90deg)" }}>
         <span className="text-2xl text-neutral-500 uppercase tracking-widest">
           AVERAGE
@@ -53,8 +68,10 @@ export default function AverageRating({ albumId }: AverageRatingProps) {
         </span>
       </div>
 
+      {/* The Big Score Number */}
       <div className="flex flex-col">
         {(() => {
+          // Loading State
           if (loading) {
             return (
               <span
@@ -65,6 +82,7 @@ export default function AverageRating({ albumId }: AverageRatingProps) {
               </span>
             );
           }
+          // No ratings yet
           if (averageRating === null) {
             return (
               <span
@@ -75,6 +93,7 @@ export default function AverageRating({ albumId }: AverageRatingProps) {
               </span>
             );
           }
+          // Actual Score
           return (
             <span
               className="font-bold text-white leading-none"
