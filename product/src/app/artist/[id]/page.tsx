@@ -70,40 +70,33 @@ export default async function ArtistPage({
       {/* Uses background-repeat to create a repeated strip across the screen */}
       <div
         className="relative w-full overflow-hidden"
-        style={{ height: "45vh", minHeight: "400px" }}
+        style={{ height: "40vh", minHeight: "400px" }}
       >
         {artistImage && (
           <div
-            className="absolute inset-0 opacity-20"
+            className="absolute inset-0"
             style={{
               backgroundImage: `url(${artistImage})`,
               backgroundSize: "auto 100%",
               backgroundRepeat: "repeat-x",
               backgroundPosition: "center",
-              filter: "grayscale(100%) contrast(110%)",
+              filter: "grayscale(100%)",
+              opacity: 1,
             }}
           />
         )}
-
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
       </div>
 
-      {/* Identity Header */}
-      <div className="relative z-10 mt-8 flex flex-col items-center text-center px-4">
-        <h1 className="text-7xl md:text-[8rem] lg:text-[10rem] font-black tracking-tighter text-white leading-none drop-shadow-2xl">
+      <div className="flex flex-col items-center text-center px-4 mt-12">
+        <h1 className="text-5xl md:text-7xl font-medium text-white leading-tight">
           {artist.name}
         </h1>
 
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <div className="mt-10 flex flex-wrap justify-center gap-2">
           {artist.genres?.slice(0, 4).map((genre: string) => (
             <span
               key={genre}
-              className="
-                uppercase tracking-widest text-xs font-bold 
-                text-neutral-400 border border-neutral-800 
-                bg-black/50 backdrop-blur-md 
-                px-4 py-2 rounded-full
-              "
+              className="uppercase tracking-widest text-xs font-bold text-neutral-400 border border-neutral-800 bg-black/50 backdrop-blur-md px-4 py-2 rounded-full"
             >
               {genre}
             </span>
@@ -111,12 +104,15 @@ export default async function ArtistPage({
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="max-w-7xl mx-auto px-6 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-16">
-        <div className="lg:col-span-8 space-y-24">
-          <DiscographySection title="Albums" items={discography.albums} />
+      <div className="max-w-7xl mx-auto px-6 mt-12">
+        <DiscographySection title="Albums" items={discography.albums} />
+        <div className="mt-16">
           <DiscographySection title="EPs" items={discography.eps} />
+        </div>
+        <div className="mt-16">
           <DiscographySection title="Singles" items={discography.singles} />
+        </div>
+        <div className="mt-16">
           <DiscographySection
             title="Compilations"
             items={discography.compilations}
