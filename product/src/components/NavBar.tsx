@@ -4,6 +4,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
 
+/**
+ * Main Navigation Component
+ * Handles live search with debouncing and global authentication state.
+ */
 export default function NavBar() {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -14,29 +18,30 @@ export default function NavBar() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const supabase = createClient();
 
+  /**
+   * Listens for authentication changes on mount.
+   * Syncs the user session and fetches the associated username from the database.
+   */
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUsername(session.user.id);
-      }
+      if (session?.user) fetchUsername(session.user.id);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-
-      if (session?.user) {
-        fetchUsername(session.user.id);
-      } else {
-        setUsername(null);
-      }
+      if (session?.user) fetchUsername(session.user.id);
+      else setUsername(null);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  /**
+   * Helper to retrieve the custom 'username' from the public profiles table.
+   */
   const fetchUsername = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
@@ -44,9 +49,7 @@ export default function NavBar() {
       .eq("id", userId)
       .single();
 
-    if (data) {
-      setUsername(data.username);
-    }
+    if (data) setUsername(data.username);
   };
 
   const handleSignOut = async () => {
@@ -56,6 +59,11 @@ export default function NavBar() {
     router.refresh();
   };
 
+  /**
+   * Search Logic with Debouncing
+   * Waits 300ms after the last keystroke before hitting the internal Search API
+   * to reduce unnecessary network load and respect Spotify rate limits.
+   */
   useEffect(() => {
     if (!query) {
       setResults([]);
@@ -77,6 +85,7 @@ export default function NavBar() {
     return () => clearTimeout(timer);
   }, [query]);
 
+  // Handles navigation when a search result is clicked
   const handleSelect = (item: any) => {
     setShowDropdown(false);
     setQuery("");
@@ -86,6 +95,7 @@ export default function NavBar() {
 
   return (
     <header className="w-full flex items-center justify-between px-6 py-3 shadow-sm bg-black sticky top-0 z-50">
+      {/* Brand Identity */}
       <div
         className="text-white font-bold text-xl cursor-pointer"
         onClick={() => router.push("/")}
@@ -93,6 +103,7 @@ export default function NavBar() {
         dotwv
       </div>
 
+      {/* Global Search Interface */}
       <div className="flex-1 max-w-lg mx-4">
         <div className="relative w-full">
           <input
@@ -100,11 +111,12 @@ export default function NavBar() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search artist, album, single..."
-            className="bg-neutral-900 border border-neutral-800 rounded px-4 py-2 w-full text-white placeholder:text-neutral-500 focus:outline-none focus:border-neutral-600"
+            className="bg-neutral-900 border border-neutral-800 rounded px-4 py-2 w-full text-white"
             onFocus={() => results.length > 0 && setShowDropdown(true)}
             onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
           />
 
+          {/* Real-time Search Results Dropdown */}
           {showDropdown && results.length > 0 && (
             <ul className="absolute top-full left-0 w-full bg-white shadow-md z-50 max-h-60 overflow-y-auto">
               {results.map((item: any) => (
@@ -131,13 +143,13 @@ export default function NavBar() {
         </div>
       </div>
 
+      {/* User Session Management (Sign In vs. Profile Menu) */}
       <div className="relative">
         {user ? (
           <div>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center hover:bg-blue-600 transition-colors"
-              aria-label="User menu"
             ></button>
 
             {showUserMenu && (
@@ -145,16 +157,12 @@ export default function NavBar() {
                 <button
                   onClick={() => {
                     setShowUserMenu(false);
-                    if (username) {
-                      router.push(`/profile/${username}`); // <-- UPDATED THIS LINE
-                    }
+                    if (username) router.push(`/profile/${username}`);
                   }}
                   className="w-full px-4 py-2 border-b border-gray-200 hover:bg-gray-50 text-left"
                 >
                   <p className="text-sm text-gray-500">Signed in as</p>
-                  <p className="text-sm font-medium truncate">
-                    @{username || "..."}
-                  </p>
+                  <p className="text-sm font-medium">@{username || "..."}</p>
                 </button>
                 <button
                   onClick={handleSignOut}
@@ -167,7 +175,7 @@ export default function NavBar() {
           </div>
         ) : (
           <button
-            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition-colors"
+            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
             onClick={() => router.push("/sign-in")}
           >
             Sign In

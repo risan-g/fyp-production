@@ -1,15 +1,27 @@
 import { getSpotifyToken } from "@/lib/spotify";
 
+/**
+ * GET Route Handler for Global Search.
+ * This API endpoint handles multi-type searches (Artists, Albums, Singles)
+ * by proxying requests to the Spotify Web API.
+ */
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const query = url.searchParams.get("q");
 
+  // Basic validation to ensure the search parameter is present.
   if (!query) {
     return new Response("Missing query", { status: 400 });
   }
 
   try {
     const token = await getSpotifyToken();
+
+    /**
+     * Parallel Data Fetching:
+     * Executes three separate Spotify API requests simultaneously.
+     * This optimises response times compared to sequential fetching.
+     */
     const [artistRes, albumRes, singleRes] = await Promise.all([
       fetch(
         `https://api.spotify.com/v1/search?q=${encodeURIComponent(
@@ -31,12 +43,18 @@ export async function GET(req: Request) {
       ),
     ]);
 
+    // Efficiently parse all JSON responses in parallel.
     const [artistData, albumData, singleData] = await Promise.all([
       artistRes.json(),
       albumRes.json(),
       singleRes.json(),
     ]);
 
+    /**
+     * Data Normalisation:
+     * Spotify returns singles within the 'albums' category.
+     * We filter these manually to provide a distinct category for the UI.
+     */
     const singles = (singleData.albums?.items || []).filter(
       (a: any) => a.album_type === "single"
     );
@@ -44,6 +62,11 @@ export async function GET(req: Request) {
     const artists = artistData.artists?.items || [];
     const albums = albumData.albums?.items || [];
 
+    /**
+     * Results Aggregation:
+     * Combines all categories into a single flat array.
+     * Each object is tagged with a 'type' property to assist the frontend renderer.
+     */
     const results = [
       ...artists.map((a: any) => ({ ...a, type: "artist" })),
       ...albums.map((a: any) => ({ ...a, type: "album" })),

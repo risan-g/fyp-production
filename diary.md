@@ -6,104 +6,172 @@
 
 #### Supervisor : Christos Dexiades
 
+### [2025-12-12] friDAY
+
+- Finalised the draft for Section 3.1 (Scope of the Web) for the technical report; completed the full draft for Chapter 3.
+- Completed the draft for Section 2.2 (Technology Comparison), evaluating frontend and backend stacks.
+
+### [2025-12-11] thursDAY
+
+- Drafted Section 3.3 (Implementation Details), focusing on the technical execution of core features.
+
+### [2025-12-10] wednesDAY
+
+- Refined the Artist Page UI to include dynamic profile pictures fetched via the Spotify API.
+
+### [2025-12-09] tueDAY
+
+- Enhanced the Homepage by replacing the generic New Releases section with a curated Featured Albums (top picks) section.
+
+### [2025-12-08] monDAY
+
+- Delivered the project presentation to the session chair (DongGyun) in Bedford 0-003.
+
+### [2025-12-07] sunDAY
+
+- Finalised the visual presentation slides and completed the accompanying speech script.
+
+### [2025-12-05] friDAY
+
+- Standardised the presentation aesthetics using a dark theme and Segoe UI typography.
+- Produced high-fidelity GIFs demonstrating the review submission workflow and user profile interface.
+- Commenced drafting the presentation script.
+
+### [2025-12-04] thursDAY
+
+- Structured the 9-slide presentation deck.
+- Developed first drafts for the Title, Tech Stack, Rating Slider, and Review components.
+- Created an GIFs showcasing the interactive functionality of the rating slider.
+
+### [2025-12-02] tuesDAY
+
+- Initialised the PowerPoint presentation; planned for a total of 9 slides with an 8-minute delivery window.
+
+### [2025-11-27] thursDAY
+
+- Commenced Homepage development, structuring the layout into Hero, New Releases, and Live Activity sections.
+- Integrated Spotify API to display the 5 most recent global releases.
+- Developed the "Live Activity" feed to display the 9 most recent community reviews from the database.
+
+### [2025-11-26] wednesDAY
+
+- Implemented a review history section within the User Profile page.
+- Integrated server-side pagination for both ratings and reviews to ensure optimal performance.
+
+### [2025-11-25] tuesDAY
+
+- Designed the architectural layout for the User Profile page.
+- Attended Supervisor Meeting #3: Received a detailed explanation of the required structure for the Interim Submission, including the specific requirements for the technical and retrospective components.
+- Discussed final Term 1 refinements and confirmed the roadmap for the remaining development weeks.
+
+### [2025-11-24] monDAY
+
+- Completed the "Web Frameworks & State of the Art" chapter for the Interim Report.
+- Finalised the review submission logic, enforcing a "one review per user per album" constraint with edit capabilities.
+
+### [2025-11-21] friDAY
+
+- Conducted literature review for the "State of the Art" section of the technical report.
+
+### [2025-11-20] thursDAY
+
+- Formulated the strategy for the Interim Submission, prioritising the technical and retrospective reports.
+
+### [2025-11-16] sunDAY
+
+- Implemented the database "Save" functionality for the 0-100 rating system.
+- Deferred the text-review component to focus on stabilising the quantitative rating logic.
+
 ### [2025-11-15] saturDAY
 
-- Ultimately decided to work on component at a time, so i plan on first doing rating as much as possible and the work on reviewing.
-- Deleted Review component and imports.
-- Replaced the basic rating placeholder with a new interactive fader component.
-- Refactored the entire album page layout to fit the new UI.
-- Hooked up both rating components to Supabase to load and display the live data.
+- Adopted a "Vertical Slicing" strategy to focus on component-level stability.
+- Replaced the placeholder rating input with a custom interactive "Fader" component.
+- Refactored the Album Page layout to accommodate the updated UI and connected the components to Supabase for live data.
 
 ### [2025-11-14] friDAY
 
-- Decided to make a new branch off feature/auth and attempt reviewing and rating again.
-- Added the foundations for reviewing and rating components.
+- Created a new feature branch to iterate on the combined rating and review system.
+- Developed the underlying foundations for the interactive review components.
 
 ### [2025-11-05] wednesDAY
 
-- Meeting with Supervisor. (Rest of the points are all notes from meeting.)
-- Need to start working on early deliverables reports and intermin report in general. If im using latex, i was advised to make separate reports, if using work, then i should just incorparate the reports into the intermin report. I will most likely be using Word.
-- Got approval that it is fine to aim to have this project just being a proper musci review site for the end of Term 1.
-- Do not need to focus on mobile version aspect for Term 1, but definetly must ytake into consideration for Term 2 as it is worth arounf 10 marks.
-- Using Supabase is fina as long as i justify why i decided to change to that after failing with nextAuth.
+- Attended Supervisor Meeting #2; received guidance on report structure and LaTeX usage.
+- Received formal approval for the Term 1 MVP scope (core review functionality).
+- Discussed the postponement of mobile optimization to Term 2.
+- Justified the strategic pivot to Supabase following implementation issues with NextAuth.
 
 ### [2025-11-04] tuesDAY
 
-- Planned how the UI of the new album page would look after rating and review components will be inlcuded.
-- Decided to make the rating system just a type in score for supervisor meeting. Planning on implementing planned idea soon after.
+- Wireframed the Album Page UI to integrate the planned rating and review components.
+- Implemented a basic numeric input for ratings as a temporary placeholder for the upcoming supervisor demo.
 
 ### [2025-11-03] monDAY
 
-- Made profiles table in Supabase, so each username is attached to an actual profile in the database.
-- The navbar shows a blue circle when logged in and says sign in when not signed in.
-- User can login with username to login.
-- Created a basic profile page as a placeholder for now. Can access by clicking on blue circle, which will show a dropdown, then click username to access it.
-- Mapped out the UI and system of how the rating would work.
+- Developed the `profiles` table in Supabase to link authenticated User IDs to public usernames.
+- Updated the Navigation Bar to dynamically reflect authentication states.
+- Implemented a basic Profile page and dropdown navigation for authenticated users.
 
 ### [2025-11-02] sunDAY
 
-- Configured Supabase clients and the middleware.
-- Added ability to sign up/sign in with email.
+- Configured the Supabase client-side and server-side middleware.
+- Successfully implemented the Email Sign-Up and Sign-In flows.
 
 ### [2025-11-01] saturDAY
 
-- Updated navbar layout so theres a brand logo on left, search bar in middle, and profile status on right, to prepare for authentication.
+- Redesigned the Navigation Bar layout, including the brand identity, centralised search, and profile status indicators.
 
 ### [2025-10-29] wednesDAY
 
-- Researched into Supabase to handle Authentication and Database. As an alternative to nextAuth.
+- Conducted technical research into Supabase as a Backend-as-a-Service (BaaS) alternative to NextAuth and custom Express.js setups.
 
 ### [2025-10-28] tuesDAY
 
-- Planned the methods of signing in/Signing up for user.
-- Attempted to use nextAuth. Failed at implmentation.
+- Defined the user onboarding flows (Sign-in/Sign-up).
+- Attempted NextAuth implementation; encountered configuration blockers leading to a search for alternatives.
 
 ### [2025-10-24] friDAY
 
-- Allowed search to also include albums and singles now. Previously only allowed Artists for development purposes
+- Expanded the Spotify search functionality to include albums and singles alongside artists.
 
 ### [2025-10-22] wednesDAY
 
-- Attended lecture on Testing Web Applications.
+- Attended a lecture on Web Application Testing, focusing on Integration and E2E strategies.
 
 ### [2025-10-21] tuesDAY
 
-- Updated artist discography layout to limit initial view to five recent albums/singles/EPs, adding a ‘Show All’ toggle for expanded display.
+- Optimised the discography layout by implementing a "Show All" toggle, limiting the initial view to the five most recent releases.
 
 ### [2025-10-20] monDAY
 
-- Allowed the ability for users to click on an artists work and be shown the tracklist.
-- Clicking on track level artists and main artist leads to their discography.
-- Decided to get rid of 'featured on' work by artist. Will look to find a way to neatly fit the artists's discography page.
+- Integrated deep linking functionality allowing users to navigate from Artist to Album and Tracklist views.
+- Refined the discography page by removing Featured On sections to reduce UI clutter.
 
 ### [2025-10-19] sunDAY
 
-- Caught up on diary.md, updating past work from notes in my physical diary.
+- Synchronised the digital project diary with physical handwritten notes taken during initial development.
 
 ### [2025-10-18] saturDAY
 
-- Successfully integrated Spotify’s API.
-- Made the search bar show live suggestions as keys are pressed.
-- Clicking on a suggested artist now displays their albums, singles, and compilations.
+- Successfully integrated the Spotify Web API.
+- Implemented a real-time "search-as-you-type" suggestion feature.
+- Developed the logic to fetch and categorize discography data (albums, singles, ep, compilations) upon selecting an artist.
 
 ### [2025-10-17] friDAY
 
-- Created a temporary search bar to prepare for Spotify integration.
-- Decided to limit the search to artists for now.
+- Developed a prototype search interface to prepare for backend API integration.
+- Restricted initial search scope to artists to simplify initial testing.
 
 ### [2025-10-15] wednesDAY
 
-- Created the initial Next.js setup with npx create-next-app.
-- Added initial issues to GitLab.
+- Initialised the Next.js project repository.
+- Populated the GitLab issue board with initial feature requirements.
 
 ### [2025-10-14] tuesDAY
 
-- Mapped out the sequence in which the features will be built.
-- Planned the user stories for the project.
+- Formulated the feature implementation sequence and drafted core User Stories for the MVP.
 
 ### [2025-10-03] friDAY
 
-- Attended the first supervisor meeting.
-- Presented my FYP project idea and outlined proposed features.
-- Received recommendations for additional features, including potential AI focused enhancements.
-- Discussed guidance on creating the project plan, clarifying expectations for the Abstract, Timeline, Risk Assessment, and Bibliography sections.
+- Attended the initial supervisor meeting to define the project scope.
+- Presented the project concept; received feedback on potential AI-driven future work.
+- Clarified deliverables for the Project Plan, including the Timeline, Risk Assessment, and Bibliography requirements.

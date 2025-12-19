@@ -79,7 +79,7 @@ export default async function ProfilePage({
               album_name: spotifyAlbum.name || review.album_name,
               artist_name: spotifyAlbum.artists[0]?.name || review.artist_name,
               fetched_image: spotifyAlbum.images?.[0]?.url || null,
-              rating: ratingData?.rating || null, // <--- Attach the rating
+              rating: ratingData?.rating || null,
             };
           } catch (e) {
             return review;
@@ -95,10 +95,12 @@ export default async function ProfilePage({
           <div className="w-32 h-32 bg-neutral-800 rounded-full flex items-center justify-center text-5xl font-bold text-neutral-500 mb-6 ring-4 ring-black">
             {profile.username[0].toUpperCase()}
           </div>
-          <h1 className="text-5xl font-bold mb-4 tracking-tight">
+
+          <h1 className="text-5xl font-serif font-medium mb-4 tracking-normal text-white">
             {profile.username}
           </h1>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 text-xs uppercase tracking-widest font-bold">
+
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 text-xs font-mono tracking-tight">
             <span>est. {formatDate(profile.created_at)}</span>
           </div>
 

@@ -3,10 +3,18 @@ import { fetchSpotifyData } from "@/lib/spotify";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
+/** * Forces the page to re-render on every request to ensure
+ * the latest community reviews are always displayed.
+ */
 export const dynamic = "force-dynamic";
 
 const ITEMS_PER_PAGE = 10;
 
+/**
+ * AllReviewsPage (Server Component)
+ * Renders a paginated list of all reviews written by a specific user.
+ * Combines Supabase relational data with live Spotify metadata.
+ */
 export default async function AllReviewsPage(props: {
   params: Promise<{ username: string }>;
   searchParams: Promise<{ page?: string }>;
@@ -17,6 +25,10 @@ export default async function AllReviewsPage(props: {
   const supabase = await createClient();
   const username = decodeURIComponent(params.username);
 
+  /**
+   * Pagination Logic:
+   * Calculates the database range (offset) based on the current page number.
+   */
   let currentPage = 1;
   if (searchParams.page && !isNaN(Number(searchParams.page))) {
     currentPage = parseInt(searchParams.page);
@@ -25,6 +37,7 @@ export default async function AllReviewsPage(props: {
   const from = (currentPage - 1) * ITEMS_PER_PAGE;
   const to = from + ITEMS_PER_PAGE - 1;
 
+  // Retrieve user profile to ensure the username exists in the system
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, username")
@@ -33,6 +46,7 @@ export default async function AllReviewsPage(props: {
 
   if (!profile) return notFound();
 
+  // Fetch reviews within the specific pagination range
   const { data: rawReviews, count } = await supabase
     .from("album_reviews")
     .select("*", { count: "exact" })
@@ -43,11 +57,17 @@ export default async function AllReviewsPage(props: {
   const totalReviews = count || 0;
   const totalPages = Math.ceil(totalReviews / ITEMS_PER_PAGE);
 
+  // Fetch all user ratings to display quantitative scores alongside text reviews
   const { data: userRatings } = await supabase
     .from("album_ratings")
     .select("album_id, rating")
     .eq("user_id", profile.id);
 
+  /**
+   * Data Orchestration:
+   * Maps through database reviews and fetches missing visual metadata (images/names)
+   * from Spotify in parallel for optimal loading speeds.
+   */
   const reviews = rawReviews
     ? await Promise.all(
         rawReviews.map(async (review) => {
@@ -67,12 +87,16 @@ export default async function AllReviewsPage(props: {
               rating: matchedRating?.rating || null,
             };
           } catch (e) {
-            return review;
+            return review; // Fallback to raw data if Spotify fetch fails
           }
         })
       )
     : [];
 
+  /**
+   * PaginationControls Component:
+   * Handles the UI logic for navigating between pages of reviews.
+   */
   const PaginationControls = () => {
     const hasPrev = currentPage > 1;
     const hasNext = currentPage < totalPages;
@@ -113,6 +137,7 @@ export default async function AllReviewsPage(props: {
   return (
     <div className="bg-black text-white min-h-screen p-8">
       <div className="max-w-7xl mx-auto pt-8">
+        {/* Header Section */}
         <div className="flex items-center gap-6 mb-16 border-b border-neutral-800 pb-8">
           <Link
             href={`/profile/${params.username}`}
@@ -130,6 +155,7 @@ export default async function AllReviewsPage(props: {
           </div>
         </div>
 
+        {/* Dynamic Reviews Grid */}
         {reviews.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
             {reviews.map((review) => (
@@ -170,6 +196,7 @@ export default async function AllReviewsPage(props: {
                           review.artist_name ||
                           "Unknown"}
                       </span>
+                      {/* Formatting the timestamp for a localised, readable date */}
                       <span className="text-xs text-neutral-600 tabular-nums mt-1">
                         {new Date(review.created_at).toLocaleDateString(
                           undefined,
@@ -179,6 +206,7 @@ export default async function AllReviewsPage(props: {
                     </div>
                   </div>
 
+                  {/* Quantitative score badge */}
                   {review.rating !== null && (
                     <div className="bg-white text-black font-bold px-3 py-1 rounded text-sm shadow-lg shrink-0">
                       {review.rating}
@@ -186,6 +214,7 @@ export default async function AllReviewsPage(props: {
                   )}
                 </div>
 
+                {/* Qualitative review text */}
                 <div className="pl-[80px]">
                   <p className="text-neutral-300 text-base leading-relaxed whitespace-pre-wrap border-l-2 border-neutral-800 pl-4 break-words">
                     {review.review_text}
@@ -199,6 +228,7 @@ export default async function AllReviewsPage(props: {
             <p className="text-neutral-500">No reviews found.</p>
           </div>
         )}
+        {/* Render pagination footer if data exceeds single page limit */}
         {totalReviews > 0 && <PaginationControls />}
       </div>
     </div>

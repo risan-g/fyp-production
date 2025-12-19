@@ -7,7 +7,8 @@ import Link from "next/link";
 
 /**
  * SignUpPage Component
- * Handles new user registration.
+ * Manages the user registration process, including form validation
+ * and integration with Supabase Auth for account creation.
  */
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
@@ -20,18 +21,23 @@ export default function SignUpPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  /**
+   * Handles the submission of the registration form.
+   * Performs client-side validation before attempting to initialise the account.
+   */
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    // Enforces these to ensure the data reaching the DB triggers is clean.
+    // Initialise validation checks to ensure data integrity
     if (username.length < 3) {
       setError("Username must be at least 3 characters");
       setLoading(false);
       return;
     }
 
+    // RegEx validation: ensures usernames contain only alphanumeric characters and underscores
     const usernameRegex = /^[a-zA-Z0-9_]+$/;
     if (!usernameRegex.test(username)) {
       setError("Username can only contain letters, numbers and underscores");
@@ -52,7 +58,11 @@ export default function SignUpPage() {
     }
 
     try {
-      // Create the Auth User
+      /**
+       * Supabase Authentication Request:
+       * Creates a new user and sends a confirmation email.
+       * The 'username' is stored in the user's metadata (user_metadata).
+       */
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -71,8 +81,11 @@ export default function SignUpPage() {
     }
   };
 
-  // Success View:
-  // Render a confirmation screen to guide the user to check their email.
+  /**
+   * Success View:
+   * Displays a post-registration guidance screen instructing the user
+   * to verify their email address.
+   */
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black px-4 text-white">
@@ -111,7 +124,7 @@ export default function SignUpPage() {
     );
   }
 
-  // Registration Form View
+  // Registration Form View: Utilises a clean, minimalist UI consistent with the brand theme.
   return (
     <div className="min-h-screen flex items-center justify-center bg-black px-4 text-white">
       <div className="max-w-md w-full space-y-8 bg-black border border-neutral-800 p-8 rounded-xl shadow-2xl">
@@ -125,6 +138,7 @@ export default function SignUpPage() {
         </div>
 
         <form onSubmit={handleSignUp} className="mt-8 space-y-6">
+          {/* Conditional rendering for error feedback */}
           {error && (
             <div className="bg-red-500/10 border border-red-900/50 text-red-500 px-4 py-3 rounded text-sm text-center">
               {error}
@@ -215,6 +229,7 @@ export default function SignUpPage() {
             </p>
           </div>
 
+          {/* Submission button with loading state to prevent duplicate registrations */}
           <button
             type="submit"
             disabled={loading}

@@ -3,10 +3,19 @@ import { fetchSpotifyData } from "@/lib/spotify";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
+/**
+ * Ensures the page is dynamically rendered on every request to
+ * reflect real-time changes in the user's rating library.
+ */
 export const dynamic = "force-dynamic";
 
+// Standardised number of items to display per page for consistent layout
 const ITEMS_PER_PAGE = 20;
 
+/**
+ * AllRatingsPage (Server Component)
+ * Displays a paginated grid of every album a user has rated.
+ */
 export default async function AllRatingsPage(props: {
   params: Promise<{ username: string }>;
   searchParams: Promise<{ page?: string }>;
@@ -14,8 +23,15 @@ export default async function AllRatingsPage(props: {
   const params = await props.params;
   const searchParams = await props.searchParams;
   const supabase = await createClient();
+
+  // Normalising the username from the URL parameters
   const username = decodeURIComponent(params.username);
 
+  /**
+   * Pagination Setup:
+   * Parses the 'page' query parameter and calculates the database 'from' and 'to'
+   * indices to fetch the correct slice of data.
+   */
   let currentPage = 1;
   if (searchParams.page && !isNaN(Number(searchParams.page))) {
     currentPage = parseInt(searchParams.page);
@@ -25,6 +41,7 @@ export default async function AllRatingsPage(props: {
   const from = (currentPage - 1) * ITEMS_PER_PAGE;
   const to = from + ITEMS_PER_PAGE - 1;
 
+  // Verify that the profile exists before attempting to fetch ratings
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, username")
@@ -33,6 +50,11 @@ export default async function AllRatingsPage(props: {
 
   if (!profile) return notFound();
 
+  /**
+   * Database Query:
+   * Fetches ratings for the specific user, ordered by most recent.
+   * Uses the range() method for efficient server-side pagination.
+   */
   const { data: rawRatings, count } = await supabase
     .from("album_ratings")
     .select("*", { count: "exact" })
@@ -43,6 +65,11 @@ export default async function AllRatingsPage(props: {
   const totalRatings = count || 0;
   const totalPages = Math.ceil(totalRatings / ITEMS_PER_PAGE);
 
+  /**
+   * Data Enrichment:
+   * Hydrates the flat database records with visual metadata from Spotify.
+   * Promise.all is used to parallelise API requests for better performance.
+   */
   const ratings = rawRatings
     ? await Promise.all(
         rawRatings.map(async (rating) => {
@@ -59,12 +86,16 @@ export default async function AllRatingsPage(props: {
               fetched_year: spotifyAlbum.release_date?.slice(0, 4) || "",
             };
           } catch (e) {
-            return rating;
+            return rating; // Fallback to database defaults on API failure
           }
         })
       )
     : [];
 
+  /**
+   * Pagination Controls Component:
+   * Renders navigation buttons to toggle between data pages.
+   */
   const PaginationControls = () => {
     const hasPrev = currentPage > 1;
     const hasNext = currentPage < totalPages;
@@ -107,6 +138,7 @@ export default async function AllRatingsPage(props: {
   return (
     <div className="bg-black text-white min-h-screen p-8">
       <div className="max-w-7xl mx-auto pt-8">
+        {/* Navigation Header */}
         <div className="flex items-center gap-6 mb-16 border-b border-neutral-800 pb-8">
           <Link
             href={`/profile/${params.username}`}
@@ -124,8 +156,10 @@ export default async function AllRatingsPage(props: {
             </p>
           </div>
         </div>
+
         {totalRatings > 0 && <PaginationControls />}
 
+        {/* Visual Ratings Grid */}
         {ratings.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10">
             {ratings.map((rating) => (
@@ -135,6 +169,7 @@ export default async function AllRatingsPage(props: {
                 className="group flex flex-col gap-3"
               >
                 <div className="relative aspect-square bg-neutral-900 rounded-xl overflow-hidden border border-neutral-800 shadow-sm group-hover:border-neutral-600 transition-colors">
+                  {/* Image rendering with lazy-load safety */}
                   {rating.fetched_image || rating.album_image_url ? (
                     <img
                       src={rating.fetched_image || rating.album_image_url}
@@ -149,6 +184,7 @@ export default async function AllRatingsPage(props: {
                     </div>
                   )}
 
+                  {/* Rating Badge Overlay */}
                   <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-md px-2 py-1 rounded text-xs font-bold text-white border border-white/10 shadow-lg">
                     {rating.rating}
                   </div>
@@ -171,6 +207,7 @@ export default async function AllRatingsPage(props: {
             <p className="text-neutral-500">No ratings found.</p>
           </div>
         )}
+
         {totalRatings > 0 && <PaginationControls />}
       </div>
     </div>

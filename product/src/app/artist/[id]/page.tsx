@@ -3,13 +3,17 @@ import { notFound } from "next/navigation";
 import { fetchSpotifyData } from "@/lib/spotify";
 import DiscographySection from "@/components/DiscographySection";
 
-// Helper function to fetch the main artist profile.
+/**
+ * Helper function to fetch the main artist profile metadata.
+ */
 async function fetchArtist(id: string) {
   return await fetchSpotifyData(`https://api.spotify.com/v1/artists/${id}`);
 }
 
-// Helper to fetch the artist's full discography.
-// We request albums, singles, and compilations in one go to keep it fast.
+/**
+ * Helper to fetch the artist's full discography.
+ * Requests albums, singles, and compilations in a single batch to optimise performance.
+ */
 async function fetchAlbums(id: string) {
   return await fetchSpotifyData(
     `https://api.spotify.com/v1/artists/${id}/albums?include_groups=album,single,compilation&limit=50`
@@ -17,10 +21,9 @@ async function fetchAlbums(id: string) {
 }
 
 /**
- * Artist Page (Server Component).
- *
- * This page acts as the main profile view for an artist. It fetches the
- * artist's details and their music history in parallel.
+ * Artist Page (Server Component)
+ * Acts as the primary profile view for an artist, displaying metadata
+ * and a categorised discography history.
  */
 export default async function ArtistPage({
   params,
@@ -29,27 +32,38 @@ export default async function ArtistPage({
 }) {
   const { id } = await params;
 
-  // We use allSettled so the page attempts to load everything at once.
-  // If the albums fail to load, we can still show the artist profile.
+  /**
+   * Parallel Execution:
+   * Uses allSettled to fetch profile and discography data simultaneously.
+   * This prevents sequential "waterfalling" of requests, reducing total load time.
+   */
   const [artistRes, albumsRes] = await Promise.allSettled([
     fetchArtist(id),
     fetchAlbums(id),
   ]);
 
-  // Check for the Artist.
-  // The artist profile is required. If this fails, we show a 404 page.
+  // Validate the artist profile; if the core data fetch fails, trigger a 404 error.
   const artist = artistRes.status === "fulfilled" ? artistRes.value : null;
   if (!artist || artist.error) return notFound();
 
-  // Safely get the albums (default to empty list if fetch failed).
+  // Initialise albums array, defaulting to an empty list if the fetch was unsuccessful.
   const rawAlbums =
     albumsRes.status === "fulfilled" ? albumsRes.value?.items : [];
 
+  /**
+   * Deduplication Logic:
+   * Removes duplicate release names (e.g., Deluxe vs Standard versions)
+   * to ensure a cleaner visual presentation of the discography.
+   */
   const uniqueAlbums = Array.from(
     new Map(rawAlbums.map((a: any) => [a.name, a])).values()
   );
 
-  // Sort the releases into semantic groups for the grid layout.
+  /**
+   * Data Categorisation:
+   * Filters the flat Spotify list into semantic groups based on track count and type.
+   * This allows the UI to distinguish between full Albums, EPs, and Singles.
+   */
   const discography = {
     albums: uniqueAlbums.filter((a: any) => a.album_type === "album"),
     eps: uniqueAlbums.filter(
@@ -67,7 +81,7 @@ export default async function ArtistPage({
 
   return (
     <div className="bg-black text-white min-h-screen pb-24">
-      {/* Uses background-repeat to create a repeated strip across the screen */}
+      {/* Decorative Header: Creates a repeated film-strip effect using the artist's profile image */}
       <div
         className="relative w-full overflow-hidden"
         style={{ height: "40vh", minHeight: "400px" }}
@@ -80,7 +94,7 @@ export default async function ArtistPage({
               backgroundSize: "auto 100%",
               backgroundRepeat: "repeat-x",
               backgroundPosition: "center",
-              filter: "grayscale(100%)",
+              filter: "grayscale(100%)", // Matches the dark, minimalist aesthetic
               opacity: 1,
             }}
           />
@@ -92,6 +106,7 @@ export default async function ArtistPage({
           {artist.name}
         </h1>
 
+        {/* Genre Tags: Maps and displays the first four genre identifiers */}
         <div className="mt-10 flex flex-wrap justify-center gap-2">
           {artist.genres?.slice(0, 4).map((genre: string) => (
             <span
@@ -104,6 +119,7 @@ export default async function ArtistPage({
         </div>
       </div>
 
+      {/* Main Discography Sections: Rendered using the categorised data objects */}
       <div className="max-w-7xl mx-auto px-6 mt-12">
         <DiscographySection title="Albums" items={discography.albums} />
         <div className="mt-16">
