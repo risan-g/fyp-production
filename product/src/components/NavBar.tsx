@@ -15,47 +15,56 @@ export default function NavBar() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const supabase = createClient();
 
   /**
-   * Listens for authentication changes on mount.
-   * Syncs the user session and fetches the associated username from the database.
+   * Listens for authentication changes.
+   * Syncs the user session and fetches the associated username and avatar.
    */
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      if (session?.user) fetchUsername(session.user.id);
+      if (session?.user) fetchProfile(session.user.id);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      if (session?.user) fetchUsername(session.user.id);
-      else setUsername(null);
+      if (session?.user) fetchProfile(session.user.id);
+      else {
+        setUsername(null);
+        setAvatarUrl(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   /**
-   * Helper to retrieve the custom 'username' from the public profiles table.
+   * Helper to retrieve the custom 'username' and 'avatar_url'
+   * from the public profiles table.
    */
-  const fetchUsername = async (userId: string) => {
+  const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("username")
+      .select("username, avatar_url")
       .eq("id", userId)
       .single();
 
-    if (data) setUsername(data.username);
+    if (data) {
+      setUsername(data.username);
+      setAvatarUrl(data.avatar_url);
+    }
   };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setShowUserMenu(false);
     setUsername(null);
+    setAvatarUrl(null);
     router.refresh();
   };
 
@@ -95,7 +104,6 @@ export default function NavBar() {
 
   return (
     <header className="w-full flex items-center justify-between px-6 py-3 shadow-sm bg-black sticky top-0 z-50">
-      {/* Brand Identity */}
       <div
         className="text-white font-bold text-xl cursor-pointer"
         onClick={() => router.push("/")}
@@ -116,7 +124,7 @@ export default function NavBar() {
             onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
           />
 
-          {/* Real-time Search Results Dropdown */}
+          {/* Real time Search Results Dropdown */}
           {showDropdown && results.length > 0 && (
             <ul className="absolute top-full left-0 w-full bg-white shadow-md z-50 max-h-60 overflow-y-auto">
               {results.map((item: any) => (
@@ -143,14 +151,27 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/* User Session Management (Sign In vs. Profile Menu) */}
+      {/* User Session Management*/}
       <div className="relative">
         {user ? (
           <div>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center hover:bg-blue-600 transition-colors"
-            ></button>
+              className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center hover:bg-neutral-700 transition-colors overflow-hidden border border-neutral-700"
+            >
+              {/* Show Real Avatar or Fallback Initial */}
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-white font-bold">
+                  {username ? username[0].toUpperCase() : "?"}
+                </span>
+              )}
+            </button>
 
             {showUserMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">

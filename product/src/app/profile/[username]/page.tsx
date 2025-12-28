@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchSpotifyData } from "@/lib/spotify";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import AvatarUpload from "../../../components/Avatar-Upload"; // <--- Import Component
 
 /**
  * Helper utility to format dates into a readable string.
@@ -34,16 +35,27 @@ export default async function ProfilePage({
   const username = decodeURIComponent(rawUsername);
 
   /**
+   * Get Current Session
+   * Check if the person viewing the page is the owner.
+   */
+  const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
+
+  /**
    * Fetch Profile Identity
-   * Retrieves basic user details (ID, Username, Join Date).
+   * Retrieves basic user details (ID, Username, Join Date, Avatar).
    */
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, username, created_at")
+    .select("id, username, created_at, avatar_url") // <--- Added avatar_url
     .ilike("username", username)
     .single();
 
   if (!profile) return notFound();
+
+  // Determine if editable
+  const isOwnProfile = currentUser?.id === profile.id;
 
   /**
    * Fetch Top Ratings
@@ -56,7 +68,6 @@ export default async function ProfilePage({
     .order("rating", { ascending: false })
     .limit(4);
 
-  // Enrich ratings with Spotify cover art
   const topRatings = rawRatings
     ? await Promise.all(
         rawRatings.map(async (rating) => {
@@ -124,8 +135,15 @@ export default async function ProfilePage({
       <div className="max-w-4xl mx-auto pt-24">
         {/* Profile Header Section */}
         <div className="flex flex-col items-center text-center pb-12 border-b border-neutral-800">
-          <div className="w-32 h-32 bg-neutral-800 rounded-full flex items-center justify-center text-5xl font-bold text-neutral-500 mb-6 ring-4 ring-black">
-            {profile.username[0].toUpperCase()}
+          {/* Avatar Component (Replaces old Blue Circle) */}
+          <div className="mb-6">
+            <AvatarUpload
+              uid={profile.id}
+              url={profile.avatar_url}
+              username={profile.username}
+              editable={isOwnProfile}
+              size={128}
+            />
           </div>
 
           <h1 className="text-5xl font-serif font-medium mb-4 tracking-normal text-white">
