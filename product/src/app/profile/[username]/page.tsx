@@ -3,6 +3,10 @@ import { fetchSpotifyData } from "@/lib/spotify";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
+/**
+ * Helper utility to format dates into a readable string.
+ * Example: "January 2024"
+ */
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString("en-US", {
     month: "long",
@@ -10,14 +14,29 @@ const formatDate = (dateString: string) => {
   });
 };
 
+/**
+ * ProfilePage (Server Component)
+ *
+ * Displays a public user profile, including their bio, avatar,
+ * top-rated albums, and recent reviews.
+ *
+ * Fetches data from Supabase and enriches it with metadata from Spotify API.
+ */
 export default async function ProfilePage({
   params,
 }: {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 }) {
-  const supabase = await createClient();
-  const username = decodeURIComponent(params.username);
+  // Await params to handle dynamic route parameters in Next.js 15+
+  const { username: rawUsername } = await params;
 
+  const supabase = await createClient();
+  const username = decodeURIComponent(rawUsername);
+
+  /**
+   * Fetch Profile Identity
+   * Retrieves basic user details (ID, Username, Join Date).
+   */
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, username, created_at")
@@ -26,6 +45,10 @@ export default async function ProfilePage({
 
   if (!profile) return notFound();
 
+  /**
+   * Fetch Top Ratings
+   * Gets the user's 4 highest-rated albums.
+   */
   const { data: rawRatings, count: ratingsCount } = await supabase
     .from("album_ratings")
     .select("*", { count: "exact" })
@@ -33,12 +56,13 @@ export default async function ProfilePage({
     .order("rating", { ascending: false })
     .limit(4);
 
+  // Enrich ratings with Spotify cover art
   const topRatings = rawRatings
     ? await Promise.all(
         rawRatings.map(async (rating) => {
           try {
             const spotifyAlbum = await fetchSpotifyData(
-              `https://api.spotify.com/v1/albums/${rating.album_id}`
+              `https://api.spotify.com/v1/albums/$$${rating.album_id}`
             );
             return {
               ...rating,
@@ -46,12 +70,17 @@ export default async function ProfilePage({
               fetched_name: spotifyAlbum.name,
             };
           } catch (e) {
+            // Fallback to existing data if Spotify fetch fails
             return rating;
           }
         })
       )
     : [];
 
+  /**
+   * Fetch Recent Reviews
+   * Gets the 3 most recent written reviews.
+   */
   const { data: rawReviews } = await supabase
     .from("album_reviews")
     .select("*")
@@ -59,14 +88,16 @@ export default async function ProfilePage({
     .order("created_at", { ascending: false })
     .limit(3);
 
+  // Enrich reviews with Spotify metadata and the associated rating
   const reviews = rawReviews
     ? await Promise.all(
         rawReviews.map(async (review) => {
           try {
             const spotifyAlbum = await fetchSpotifyData(
-              `https://api.spotify.com/v1/albums/${review.album_id}`
+              `https://api.spotify.com/v1/albums/$$${review.album_id}`
             );
 
+            // Fetch the specific rating for this album review
             const { data: ratingData } = await supabase
               .from("album_ratings")
               .select("rating")
@@ -91,6 +122,7 @@ export default async function ProfilePage({
   return (
     <div className="bg-black text-white min-h-screen p-8">
       <div className="max-w-4xl mx-auto pt-24">
+        {/* Profile Header Section */}
         <div className="flex flex-col items-center text-center pb-12 border-b border-neutral-800">
           <div className="w-32 h-32 bg-neutral-800 rounded-full flex items-center justify-center text-5xl font-bold text-neutral-500 mb-6 ring-4 ring-black">
             {profile.username[0].toUpperCase()}
@@ -116,13 +148,14 @@ export default async function ProfilePage({
           </div>
         </div>
 
+        {/* Top Rated Albums Grid */}
         <div className="mt-16 w-full">
           <div className="flex items-end justify-between mb-6">
             <h2 className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
               Top Rated
             </h2>
             <Link
-              href={`/profile/${params.username}/ratings`}
+              href={`/profile/${rawUsername}/ratings`}
               className="text-xs text-neutral-500 font-bold uppercase tracking-widest hover:text-neutral-400 transition-colors flex items-center gap-1"
             >
               <span className="text-lg leading-none">→</span>
@@ -164,6 +197,7 @@ export default async function ProfilePage({
                 </Link>
               ))}
 
+              {/* Empty State Placeholders to maintain grid layout */}
               {[...Array(4 - topRatings.length)].map((_, i) => (
                 <div
                   key={i}
@@ -178,13 +212,14 @@ export default async function ProfilePage({
           )}
         </div>
 
+        {/* Recent Reviews List */}
         <div className="mt-16">
           <div className="flex items-end justify-between mb-6">
             <h2 className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
               Recent Reviews
             </h2>
             <Link
-              href={`/profile/${params.username}/reviews`}
+              href={`/profile/${rawUsername}/reviews`}
               className="text-xs text-neutral-500 font-bold uppercase tracking-widest hover:text-neutral-400 transition-colors flex items-center gap-1"
             >
               <span className="text-lg leading-none">→</span>
