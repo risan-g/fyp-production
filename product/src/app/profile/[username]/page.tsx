@@ -19,7 +19,6 @@ const formatDate = (dateString: string) => {
  *
  * Displays a public user profile, including their bio, avatar,
  * top-rated albums, and recent reviews.
- * * UPDATE: Fetches from the unified 'reviews' table.
  * Uses cached metadata (Album Name/Image) for instant loading.
  */
 export default async function ProfilePage({
@@ -56,7 +55,6 @@ export default async function ProfilePage({
 
   /**
    * Fetch Stats (Counts)
-   * We run two lightweight queries to get the total counts for the header.
    */
   const { count: ratingsCount } = await supabase
     .from("reviews")
@@ -87,7 +85,6 @@ export default async function ProfilePage({
   /**
    * Fetch Recent Reviews
    * Gets the 3 most recent written reviews.
-   * We filter out rows where content is null or empty.
    */
   const { data: recentReviews } = await supabase
     .from("reviews")
