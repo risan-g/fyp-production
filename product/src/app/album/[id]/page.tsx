@@ -35,24 +35,36 @@ export default async function AlbumPage({
   ).padStart(2, "0");
   const durationString = `${totalMinutes}:${totalSeconds}`;
 
+  // Grab the image for the database cache
+  const albumImage = album.images?.[0]?.url || "";
+
   return (
     <div className="bg-black text-white min-h-screen p-8">
       <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-x-8 items-start">
         <div className="flex flex-col gap-6">
-          {album.images?.[0] && (
+          {albumImage && (
             <img
-              src={album.images[0].url}
+              src={albumImage}
               alt={album.name}
               className="w-full aspect-square object-cover shadow-lg rounded-lg"
             />
           )}
+
+          {/* Passed albumImage to Rating so it can cache it */}
           <Rating
             albumId={album.id}
             albumName={album.name}
             artistName={album.artists[0]?.name || "Unknown Artist"}
+            albumImage={albumImage}
           />
 
-          <ReviewForm albumId={album.id} />
+          {/* Passed metadata to ReviewForm so it can cache it too */}
+          <ReviewForm
+            albumId={album.id}
+            albumName={album.name}
+            artistName={album.artists[0]?.name || "Unknown Artist"}
+            albumImage={albumImage}
+          />
         </div>
         <div className="flex flex-col gap-8">
           {/* Album Header & Stats */}

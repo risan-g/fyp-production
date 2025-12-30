@@ -18,7 +18,8 @@ const timeAgo = (date: string) => {
 /**
  * Review List Component.
  *
- * This component fetches and displays all reviews for a specific album.
+ * This component fetches and displays reviews.
+ * UPDATE: It now filters out "Rating Only" entries (where content is empty).
  */
 export default function ReviewList({ albumId }: { albumId: string }) {
   const supabase = createClient();
@@ -27,39 +28,21 @@ export default function ReviewList({ albumId }: { albumId: string }) {
   // Fetch data when the component loads
   useEffect(() => {
     const fetchData = async () => {
-      // Get the written reviews + the username of the person who wrote it.
-      const { data: reviewsData } = await supabase
-        .from("album_reviews")
+      const { data } = await supabase
+        .from("reviews")
         .select(
           `
-          id, review_text, created_at, user_id,
-          profiles (username)
+          id, content, rating, created_at, user_id,
+          profiles (username, avatar_url)
         `
         )
         .eq("album_id", albumId)
+        // FILTER: Only show rows where content exists and is not empty
+        .not("content", "is", null)
+        .neq("content", "")
         .order("created_at", { ascending: false });
 
-      if (!reviewsData) return;
-
-      // Get the numerical ratings for this album.
-      const { data: ratingsData } = await supabase
-        .from("album_ratings")
-        .select("user_id, rating")
-        .eq("album_id", albumId);
-
-      // Create a quick lookup map for ratings.
-      const ratingMap: Record<string, number> = {};
-      ratingsData?.forEach((r) => {
-        ratingMap[r.user_id] = r.rating;
-      });
-
-      // Combine the data.
-      const combined = reviewsData.map((review) => ({
-        ...review,
-        rating: ratingMap[review.user_id] || null,
-      }));
-
-      setReviews(combined);
+      if (data) setReviews(data);
     };
 
     fetchData();
@@ -80,8 +63,18 @@ export default function ReviewList({ albumId }: { albumId: string }) {
         {reviews.map((review) => (
           <div key={review.id} className="flex gap-4">
             {/* Avatar Circle */}
-            <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center text-xs font-bold shrink-0 text-neutral-400">
-              {review.profiles?.username?.[0]?.toUpperCase() || "?"}
+            <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center overflow-hidden shrink-0 border border-neutral-800">
+              {review.profiles?.avatar_url ? (
+                <img
+                  src={review.profiles.avatar_url}
+                  alt="User"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-neutral-400 text-xs font-bold">
+                  {review.profiles?.username?.[0]?.toUpperCase() || "?"}
+                </span>
+              )}
             </div>
 
             <div className="flex-1">
@@ -104,7 +97,7 @@ export default function ReviewList({ albumId }: { albumId: string }) {
 
               {/* The Review Content */}
               <p className="text-neutral-300 text-sm leading-relaxed max-w-4xl">
-                {review.review_text}
+                {review.content}
               </p>
             </div>
           </div>
