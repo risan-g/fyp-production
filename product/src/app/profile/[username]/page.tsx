@@ -1,8 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
-import { fetchSpotifyData } from "@/lib/spotify";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import AvatarUpload from "../../../components/Avatar-Upload"; // <--- Import Component
+import AvatarUpload from "@/components/Avatar-Upload";
 
 /**
  * Helper utility to format dates into a readable string.
@@ -20,15 +19,14 @@ const formatDate = (dateString: string) => {
  *
  * Displays a public user profile, including their bio, avatar,
  * top-rated albums, and recent reviews.
- *
- * Fetches data from Supabase and enriches it with metadata from Spotify API.
+ * * UPDATE: Fetches from the unified 'reviews' table.
+ * Uses cached metadata (Album Name/Image) for instant loading.
  */
 export default async function ProfilePage({
   params,
 }: {
   params: Promise<{ username: string }>;
 }) {
-  // Await params to handle dynamic route parameters in Next.js 15+
   const { username: rawUsername } = await params;
 
   const supabase = await createClient();
@@ -44,98 +42,68 @@ export default async function ProfilePage({
 
   /**
    * Fetch Profile Identity
-   * Retrieves basic user details (ID, Username, Join Date, Avatar).
+   * Retrieves basic user details.
    */
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, username, created_at, avatar_url") // <--- Added avatar_url
+    .select("id, username, created_at, avatar_url")
     .ilike("username", username)
     .single();
 
   if (!profile) return notFound();
 
-  // Determine if editable
   const isOwnProfile = currentUser?.id === profile.id;
 
   /**
-   * Fetch Top Ratings
-   * Gets the user's 4 highest-rated albums.
+   * Fetch Stats (Counts)
+   * We run two lightweight queries to get the total counts for the header.
    */
-  const { data: rawRatings, count: ratingsCount } = await supabase
-    .from("album_ratings")
-    .select("*", { count: "exact" })
+  const { count: ratingsCount } = await supabase
+    .from("reviews")
+    .select("*", { count: "exact", head: true })
     .eq("user_id", profile.id)
-    .order("rating", { ascending: false })
-    .limit(4);
+    .not("rating", "is", null);
 
-  const topRatings = rawRatings
-    ? await Promise.all(
-        rawRatings.map(async (rating) => {
-          try {
-            const spotifyAlbum = await fetchSpotifyData(
-              `https://api.spotify.com/v1/albums/$$${rating.album_id}`
-            );
-            return {
-              ...rating,
-              fetched_image: spotifyAlbum.images?.[0]?.url || null,
-              fetched_name: spotifyAlbum.name,
-            };
-          } catch (e) {
-            // Fallback to existing data if Spotify fetch fails
-            return rating;
-          }
-        })
-      )
-    : [];
+  const { count: reviewsCount } = await supabase
+    .from("reviews")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", profile.id)
+    .not("content", "is", null)
+    .neq("content", "");
+
+  /**
+   * Fetch Top Ratings
+   * Gets the user's 4 highest-rated albums from the unified table.
+   * We filter out rows where rating is null.
+   */
+  const { data: topRatings } = await supabase
+    .from("reviews")
+    .select("*")
+    .eq("user_id", profile.id)
+    .not("rating", "is", null)
+    .order("rating", { ascending: false }) // Highest score first
+    .limit(4);
 
   /**
    * Fetch Recent Reviews
    * Gets the 3 most recent written reviews.
+   * We filter out rows where content is null or empty.
    */
-  const { data: rawReviews } = await supabase
-    .from("album_reviews")
+  const { data: recentReviews } = await supabase
+    .from("reviews")
     .select("*")
     .eq("user_id", profile.id)
+    .not("content", "is", null)
+    .neq("content", "")
     .order("created_at", { ascending: false })
     .limit(3);
-
-  // Enrich reviews with Spotify metadata and the associated rating
-  const reviews = rawReviews
-    ? await Promise.all(
-        rawReviews.map(async (review) => {
-          try {
-            const spotifyAlbum = await fetchSpotifyData(
-              `https://api.spotify.com/v1/albums/$$${review.album_id}`
-            );
-
-            // Fetch the specific rating for this album review
-            const { data: ratingData } = await supabase
-              .from("album_ratings")
-              .select("rating")
-              .eq("user_id", profile.id)
-              .eq("album_id", review.album_id)
-              .single();
-
-            return {
-              ...review,
-              album_name: spotifyAlbum.name || review.album_name,
-              artist_name: spotifyAlbum.artists[0]?.name || review.artist_name,
-              fetched_image: spotifyAlbum.images?.[0]?.url || null,
-              rating: ratingData?.rating || null,
-            };
-          } catch (e) {
-            return review;
-          }
-        })
-      )
-    : [];
 
   return (
     <div className="bg-black text-white min-h-screen p-8">
       <div className="max-w-4xl mx-auto pt-24">
         {/* Profile Header Section */}
         <div className="flex flex-col items-center text-center pb-12 border-b border-neutral-800">
-          {/* Avatar Component (Replaces old Blue Circle) */}
+          {/* Avatar Component */}
           <div className="mb-6">
             <AvatarUpload
               uid={profile.id}
@@ -160,7 +128,7 @@ export default async function ProfilePage({
               Ratings
             </span>
             <span>
-              <strong className="text-white">{reviews?.length || 0}</strong>{" "}
+              <strong className="text-white">{reviewsCount || 0}</strong>{" "}
               Reviews
             </span>
           </div>
@@ -195,16 +163,17 @@ export default async function ProfilePage({
                   key={rating.id}
                   className="block group relative aspect-square bg-neutral-900 rounded-lg overflow-hidden border border-neutral-800 hover:border-neutral-500 transition-all"
                 >
-                  {rating.fetched_image || rating.album_image_url ? (
+                  {/* Uses Cached Image URL from Database */}
+                  {rating.album_image_url ? (
                     <img
-                      src={rating.fetched_image || rating.album_image_url}
+                      src={rating.album_image_url}
                       alt={rating.album_name}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center">
                       <span className="text-xs text-neutral-600 font-bold">
-                        {rating.fetched_name || rating.album_name || "Unknown"}
+                        {rating.album_name || "Unknown"}
                       </span>
                     </div>
                   )}
@@ -216,7 +185,7 @@ export default async function ProfilePage({
               ))}
 
               {/* Empty State Placeholders to maintain grid layout */}
-              {[...Array(4 - topRatings.length)].map((_, i) => (
+              {[...Array(Math.max(0, 4 - topRatings.length))].map((_, i) => (
                 <div
                   key={i}
                   className="aspect-square bg-neutral-900/30 rounded-lg border border-neutral-900 border-dashed"
@@ -245,17 +214,17 @@ export default async function ProfilePage({
           </div>
 
           <div className="space-y-4">
-            {reviews && reviews.length > 0 ? (
-              reviews.map((review) => (
+            {recentReviews && recentReviews.length > 0 ? (
+              recentReviews.map((review) => (
                 <div
                   key={review.id}
                   className="group bg-neutral-900/30 border border-neutral-800 rounded-xl p-6 hover:border-neutral-600 transition-colors"
                 >
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex gap-4 items-center">
-                      {review.fetched_image && (
+                      {review.album_image_url && (
                         <img
-                          src={review.fetched_image}
+                          src={review.album_image_url}
                           alt={review.album_name}
                           className="w-12 h-12 rounded object-cover shadow-sm"
                         />
@@ -279,6 +248,7 @@ export default async function ProfilePage({
                         {new Date(review.created_at).toLocaleDateString()}
                       </span>
 
+                      {/* Display rating if it exists in the row */}
                       {review.rating !== null && (
                         <span className="bg-neutral-800 text-white text-xs font-bold px-2 py-1 rounded border border-neutral-700">
                           ★ {review.rating}
@@ -288,7 +258,8 @@ export default async function ProfilePage({
                   </div>
 
                   <p className="text-neutral-300 text-sm leading-relaxed whitespace-pre-wrap border-l-2 border-neutral-800 pl-4 ml-1">
-                    {review.review_text}
+                    {/* Using 'content' column from unified table */}
+                    {review.content}
                   </p>
                 </div>
               ))

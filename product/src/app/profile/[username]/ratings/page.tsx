@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { fetchSpotifyData } from "@/lib/spotify";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -15,6 +14,7 @@ const ITEMS_PER_PAGE = 20;
 /**
  * AllRatingsPage (Server Component)
  * Displays a paginated grid of every album a user has rated.
+ * Uses unified 'reviews' table and cached metadata.
  */
 export default async function AllRatingsPage(props: {
   params: Promise<{ username: string }>;
@@ -24,13 +24,10 @@ export default async function AllRatingsPage(props: {
   const searchParams = await props.searchParams;
   const supabase = await createClient();
 
-  // Normalising the username from the URL parameters
   const username = decodeURIComponent(params.username);
 
   /**
-   * Pagination Setup:
-   * Parses the 'page' query parameter and calculates the database 'from' and 'to'
-   * indices to fetch the correct slice of data.
+   * Pagination Setup
    */
   let currentPage = 1;
   if (searchParams.page && !isNaN(Number(searchParams.page))) {
@@ -41,7 +38,7 @@ export default async function AllRatingsPage(props: {
   const from = (currentPage - 1) * ITEMS_PER_PAGE;
   const to = from + ITEMS_PER_PAGE - 1;
 
-  // Verify that the profile exists before attempting to fetch ratings
+  // Verify that the profile exists
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, username")
@@ -52,49 +49,22 @@ export default async function AllRatingsPage(props: {
 
   /**
    * Database Query:
-   * Fetches ratings for the specific user, ordered by most recent.
-   * Uses the range() method for efficient server-side pagination.
+   * Fetches ratings from 'reviews' table where rating is NOT null.
+   * No need for external API calls because metadata is cached.
    */
-  const { data: rawRatings, count } = await supabase
-    .from("album_ratings")
+  const { data: ratings, count } = await supabase
+    .from("reviews")
     .select("*", { count: "exact" })
     .eq("user_id", profile.id)
-    .order("created_at", { ascending: false })
+    .not("rating", "is", null) // Filter out unrated reviews
+    .order("created_at", { ascending: false }) // Most recent first
     .range(from, to);
 
   const totalRatings = count || 0;
   const totalPages = Math.ceil(totalRatings / ITEMS_PER_PAGE);
 
   /**
-   * Data Enrichment:
-   * Hydrates the flat database records with visual metadata from Spotify.
-   * Promise.all is used to parallelise API requests for better performance.
-   */
-  const ratings = rawRatings
-    ? await Promise.all(
-        rawRatings.map(async (rating) => {
-          try {
-            const spotifyAlbum = await fetchSpotifyData(
-              `https://api.spotify.com/v1/albums/${rating.album_id}`
-            );
-            return {
-              ...rating,
-              fetched_image: spotifyAlbum.images?.[0]?.url || null,
-              fetched_name: spotifyAlbum.name,
-              fetched_artist:
-                spotifyAlbum.artists?.[0]?.name || "Unknown Artist",
-              fetched_year: spotifyAlbum.release_date?.slice(0, 4) || "",
-            };
-          } catch (e) {
-            return rating; // Fallback to database defaults on API failure
-          }
-        })
-      )
-    : [];
-
-  /**
-   * Pagination Controls Component:
-   * Renders navigation buttons to toggle between data pages.
+   * Pagination Controls Component
    */
   const PaginationControls = () => {
     const hasPrev = currentPage > 1;
@@ -160,7 +130,7 @@ export default async function AllRatingsPage(props: {
         {totalRatings > 0 && <PaginationControls />}
 
         {/* Visual Ratings Grid */}
-        {ratings.length > 0 ? (
+        {ratings && ratings.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10">
             {ratings.map((rating) => (
               <Link
@@ -169,17 +139,17 @@ export default async function AllRatingsPage(props: {
                 className="group flex flex-col gap-3"
               >
                 <div className="relative aspect-square bg-neutral-900 rounded-xl overflow-hidden border border-neutral-800 shadow-sm group-hover:border-neutral-600 transition-colors">
-                  {/* Image rendering with lazy-load safety */}
-                  {rating.fetched_image || rating.album_image_url ? (
+                  {/* Image rendering using cached data */}
+                  {rating.album_image_url ? (
                     <img
-                      src={rating.fetched_image || rating.album_image_url}
+                      src={rating.album_image_url}
                       alt={rating.album_name}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center">
                       <span className="text-xs text-neutral-600 font-bold">
-                        {rating.fetched_name || rating.album_name || "Unknown"}
+                        {rating.album_name || "Unknown"}
                       </span>
                     </div>
                   )}
@@ -192,11 +162,10 @@ export default async function AllRatingsPage(props: {
 
                 <div className="flex flex-col">
                   <span className="font-bold text-sm text-white truncate group-hover:text-neutral-300 transition-colors">
-                    {rating.fetched_name || rating.album_name}
+                    {rating.album_name}
                   </span>
                   <span className="text-xs text-neutral-500 truncate">
-                    {rating.fetched_artist || rating.artist_name}
-                    {rating.fetched_year && ` • ${rating.fetched_year}`}
+                    {rating.artist_name}
                   </span>
                 </div>
               </Link>
