@@ -6,6 +6,24 @@
 
 #### Supervisor : Christos Dexiades
 
+_TERM 2_
+
+### [2025-12-30] tuesDAY
+
+- Queried the new 'reviews' table in Supabase. Handles both the reviews and ratings of an album.
+- Redone the rating and review components in website to accomade for the new reviews table.
+- Fixed profile pages components for new table and also fixed issue with the review and ratings count.
+
+### [2025-12-28] sunDAY
+
+- Created new Supaase Project. Restarting database/authentication side.
+- Created 'profiles' table that handles user authentication information.
+- Redone the authentication flow. Only email sign in possible now, removed confirm password, and also checks if username is available.
+- Added show password logic.
+- Users can now upload profile pic for their account and can change/delete it. Update in the nav bar as well.
+
+_TERM 1_
+
 ### [2025-12-12] friDAY
 
 - Finalised the draft for Section 3.1 (Scope of the Web) for the technical report; completed the full draft for Chapter 3.
