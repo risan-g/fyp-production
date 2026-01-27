@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import AvatarUpload from "@/components/Avatar-Upload";
+import SyncButton from "@/components/SyncButton";
 
 /**
  * Helper utility to format dates into a readable string.
@@ -18,8 +19,10 @@ const formatDate = (dateString: string) => {
  * ProfilePage (Server Component)
  *
  * Displays a public user profile, including their bio, avatar,
- * top-rated albums, and recent reviews.
- * Uses cached metadata (Album Name/Image) for instant loading.
+ * social connections (Syncs), and content history.
+ *
+ * This component uses parallel data fetching to load the
+ * Identity, Social Graph, and Content Stats simultaneously.
  */
 export default async function ProfilePage({
   params,
@@ -27,13 +30,13 @@ export default async function ProfilePage({
   params: Promise<{ username: string }>;
 }) {
   const { username: rawUsername } = await params;
-
   const supabase = await createClient();
   const username = decodeURIComponent(rawUsername);
 
   /**
    * Get Current Session
-   * Check if the person viewing the page is the owner.
+   * Check if the person viewing the page is logged in.
+   * We need this to determine if we should show the "Sync" button.
    */
   const {
     data: { user: currentUser },
@@ -41,7 +44,7 @@ export default async function ProfilePage({
 
   /**
    * Fetch Profile Identity
-   * Retrieves basic user details.
+   * Retrieves basic user details for the profile being viewed.
    */
   const { data: profile } = await supabase
     .from("profiles")
@@ -54,52 +57,101 @@ export default async function ProfilePage({
   const isOwnProfile = currentUser?.id === profile.id;
 
   /**
-   * Fetch Stats (Counts)
+   * Fetch All Data (Parallel Execution)
+   * Instead of awaiting queries one by one (Waterfall), we fire
+   * all database requests simultaneously for maximum performance.
    */
-  const { count: ratingsCount } = await supabase
-    .from("reviews")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", profile.id)
-    .not("rating", "is", null);
+  const [
+    syncCountData,
+    // rotationCountData, // <-- Placeholder for future "Artist Rotations" feature
+    amIFollowingData, // Check A: Do I follow them?
+    areTheyFollowingMeData, // Check B: Do they follow me?
+    ratingsCountData,
+    reviewsCountData,
+    topRatingsData,
+    recentReviewsData,
+  ] = await Promise.all([
+    // Sync Count (Calculated via SQL RPC function)
+    supabase.rpc("get_sync_count", { target_user_id: profile.id }),
 
-  const { count: reviewsCount } = await supabase
-    .from("reviews")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", profile.id)
-    .not("content", "is", null)
-    .neq("content", "");
+    // Relationship Check: Am I following them?
+    // Only runs if logged in and viewing someone else.
+    currentUser && !isOwnProfile
+      ? supabase
+          .from("follows")
+          .select("*")
+          .eq("follower_id", currentUser.id)
+          .eq("following_id", profile.id)
+          .single()
+      : Promise.resolve({ data: null }),
+
+    // Relationship Check: Are they following me?
+    // Necessary for the "SYNC BACK" button state.
+    currentUser && !isOwnProfile
+      ? supabase
+          .from("follows")
+          .select("*")
+          .eq("follower_id", profile.id)
+          .eq("following_id", currentUser.id)
+          .single()
+      : Promise.resolve({ data: null }),
+
+    // Count Ratings (where rating is not null)
+    supabase
+      .from("reviews")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", profile.id)
+      .not("rating", "is", null),
+
+    // Count Reviews (where content exists)
+    supabase
+      .from("reviews")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", profile.id)
+      .not("content", "is", null)
+      .neq("content", ""),
+
+    // Get 4 highest rated albums
+    supabase
+      .from("reviews")
+      .select("*")
+      .eq("user_id", profile.id)
+      .not("rating", "is", null)
+      .order("rating", { ascending: false })
+      .limit(4),
+
+    // Get 3 most recent texts
+    supabase
+      .from("reviews")
+      .select("*")
+      .eq("user_id", profile.id)
+      .not("content", "is", null)
+      .neq("content", "")
+      .order("created_at", { ascending: false })
+      .limit(3),
+  ]);
 
   /**
-   * Fetch Top Ratings
-   * Gets the user's 4 highest-rated albums from the unified table.
-   * We filter out rows where rating is null.
+   * Process Data
+   * Normalise database results into clean variables for the UI.
    */
-  const { data: topRatings } = await supabase
-    .from("reviews")
-    .select("*")
-    .eq("user_id", profile.id)
-    .not("rating", "is", null)
-    .order("rating", { ascending: false }) // Highest score first
-    .limit(4);
+  const syncCount = syncCountData.data || 0;
+  const rotationCount = 0; // Placeholder
 
-  /**
-   * Fetch Recent Reviews
-   * Gets the 3 most recent written reviews.
-   */
-  const { data: recentReviews } = await supabase
-    .from("reviews")
-    .select("*")
-    .eq("user_id", profile.id)
-    .not("content", "is", null)
-    .neq("content", "")
-    .order("created_at", { ascending: false })
-    .limit(3);
+  // Convert relationship checks to booleans
+  const isFollowing = !!amIFollowingData.data;
+  const isFollower = !!areTheyFollowingMeData.data;
+
+  const ratingsCount = ratingsCountData.count || 0;
+  const reviewsCount = reviewsCountData.count || 0;
+  const topRatings = topRatingsData.data || [];
+  const recentReviews = recentReviewsData.data || [];
 
   return (
     <div className="bg-black text-white min-h-screen p-8">
       <div className="max-w-4xl mx-auto pt-24">
         {/* Profile Header Section */}
-        <div className="flex flex-col items-center text-center pb-12 border-b border-neutral-800">
+        <div className="flex flex-col items-center text-center pb-8">
           {/* Avatar Component */}
           <div className="mb-6">
             <AvatarUpload
@@ -115,18 +167,53 @@ export default async function ProfilePage({
             {profile.username}
           </h1>
 
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 text-xs font-mono tracking-tight">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 text-xs font-mono tracking-tight mb-6">
             <span>est. {formatDate(profile.created_at)}</span>
           </div>
 
-          <div className="flex gap-8 mt-8 text-sm text-neutral-500">
+          {/* Action Button Logic:
+             - If Visitor (Logged In): Show "Sync Button" with 4-state logic.
+             - If Owner: Show spacer (or Edit Profile in future).
+          */}
+          {!isOwnProfile && currentUser ? (
+            <div className="mb-8">
+              <SyncButton
+                targetUserId={profile.id}
+                initialIsFollowing={isFollowing}
+                isTargetFollowingMe={isFollower}
+              />
+            </div>
+          ) : isOwnProfile ? (
+            <div className="mb-8 h-8"></div>
+          ) : null}
+
+          {/*
+             Displays social metrics (Syncs & Rotation).
+          */}
+          <div className="grid grid-cols-2 gap-16 border-y border-neutral-800 py-6 mb-8 w-full max-w-md mx-auto">
+            {/* Syncs */}
+            <div className="text-center cursor-pointer hover:opacity-70 transition-opacity">
+              <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mb-2">
+                Syncs
+              </p>
+              <p className="text-4xl font-mono text-white">{syncCount}</p>
+            </div>
+            {/* Rotation */}
+            <div className="text-center cursor-pointer hover:opacity-70 transition-opacity">
+              <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mb-2">
+                Rotation
+              </p>
+              <p className="text-4xl font-mono text-white">{rotationCount}</p>
+            </div>
+          </div>
+
+          {/* Ratings/Reviews */}
+          <div className="flex gap-8 text-sm text-neutral-500">
             <span>
-              <strong className="text-white">{ratingsCount || 0}</strong>{" "}
-              Ratings
+              <strong className="text-white">{ratingsCount}</strong> Ratings
             </span>
             <span>
-              <strong className="text-white">{reviewsCount || 0}</strong>{" "}
-              Reviews
+              <strong className="text-white">{reviewsCount}</strong> Reviews
             </span>
           </div>
         </div>
@@ -139,9 +226,9 @@ export default async function ProfilePage({
             </h2>
             <Link
               href={`/profile/${rawUsername}/ratings`}
-              className="text-xs text-neutral-500 font-bold uppercase tracking-widest hover:text-neutral-400 transition-colors flex items-center gap-1"
+              className="text-xs text-neutral-500 font-bold uppercase tracking-widest hover:text-white transition-colors flex items-center gap-1"
             >
-              <span className="text-lg leading-none">→</span>
+              View All <span className="text-lg leading-none">→</span>
             </Link>
           </div>
 
@@ -204,9 +291,9 @@ export default async function ProfilePage({
             </h2>
             <Link
               href={`/profile/${rawUsername}/reviews`}
-              className="text-xs text-neutral-500 font-bold uppercase tracking-widest hover:text-neutral-400 transition-colors flex items-center gap-1"
+              className="text-xs text-neutral-500 font-bold uppercase tracking-widest hover:text-white transition-colors flex items-center gap-1"
             >
-              <span className="text-lg leading-none">→</span>
+              View All <span className="text-lg leading-none">→</span>
             </Link>
           </div>
 
