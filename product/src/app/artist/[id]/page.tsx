@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchSpotifyData } from "@/lib/spotify";
 import DiscographySection from "@/components/DiscographySection";
+import { createClient } from "@/lib/supabase/server";
+import RotationButton from "@/components/RotationButton";
 
 /**
  * Helper function to fetch the main artist profile metadata.
@@ -16,14 +18,14 @@ async function fetchArtist(id: string) {
  */
 async function fetchAlbums(id: string) {
   return await fetchSpotifyData(
-    `https://api.spotify.com/v1/artists/${id}/albums?include_groups=album,single,compilation&limit=50`
+    `https://api.spotify.com/v1/artists/${id}/albums?include_groups=album,single,compilation&limit=50`,
   );
 }
 
 /**
  * Artist Page (Server Component)
- * Acts as the primary profile view for an artist, displaying metadata
- * and a categorised discography history.
+ * Acts as the primary profile view for an artist, displaying metadata,
+ * community stats (Global Rotation), and a categorised discography history.
  */
 export default async function ArtistPage({
   params,
@@ -31,16 +33,44 @@ export default async function ArtistPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const supabase = await createClient();
+
+  // Get Current User (to determine if they follow this artist)
+  const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
 
   /**
    * Parallel Execution:
-   * Uses allSettled to fetch profile and discography data simultaneously.
+   * Uses allSettled to fetch Spotify Data AND Supabase Data simultaneously.
    * This prevents sequential "waterfalling" of requests, reducing total load time.
    */
-  const [artistRes, albumsRes] = await Promise.allSettled([
-    fetchArtist(id),
-    fetchAlbums(id),
-  ]);
+  const [artistRes, albumsRes, globalCountRes, userStatusRes] =
+    await Promise.allSettled([
+      // Artist Metadata
+      fetchArtist(id),
+
+      // Discography
+      fetchAlbums(id),
+
+      // Global Rotation Count
+      // Leverages the DB index to instantly count how many users follow this artist.
+      supabase
+        .from("artist_follows")
+        .select("*", { count: "exact", head: true })
+        .eq("spotify_artist_id", id),
+
+      // User's Status
+      // Checks if the current authenticated user has this artist in their rotation.
+      currentUser
+        ? supabase
+            .from("artist_follows")
+            .select("id")
+            .eq("user_id", currentUser.id)
+            .eq("spotify_artist_id", id)
+            .single()
+        : Promise.resolve({ data: null }),
+    ]);
 
   // Validate the artist profile; if the core data fetch fails, trigger a 404 error.
   const artist = artistRes.status === "fulfilled" ? artistRes.value : null;
@@ -50,13 +80,20 @@ export default async function ArtistPage({
   const rawAlbums =
     albumsRes.status === "fulfilled" ? albumsRes.value?.items : [];
 
+  // Extract the count and status, defaulting to 0/false if fetch failed.
+  const globalRotationCount =
+    globalCountRes.status === "fulfilled" ? globalCountRes.value.count || 0 : 0;
+
+  const isInRotation =
+    userStatusRes.status === "fulfilled" && !!userStatusRes.value.data;
+
   /**
    * Deduplication Logic:
    * Removes duplicate release names (e.g., Deluxe vs Standard versions)
    * to ensure a cleaner visual presentation of the discography.
    */
   const uniqueAlbums = Array.from(
-    new Map(rawAlbums.map((a: any) => [a.name, a])).values()
+    new Map(rawAlbums.map((a: any) => [a.name, a])).values(),
   );
 
   /**
@@ -67,13 +104,13 @@ export default async function ArtistPage({
   const discography = {
     albums: uniqueAlbums.filter((a: any) => a.album_type === "album"),
     eps: uniqueAlbums.filter(
-      (a: any) => a.album_type === "single" && a.total_tracks > 3
+      (a: any) => a.album_type === "single" && a.total_tracks > 3,
     ),
     singles: uniqueAlbums.filter(
-      (a: any) => a.album_type === "single" && a.total_tracks <= 3
+      (a: any) => a.album_type === "single" && a.total_tracks <= 3,
     ),
     compilations: uniqueAlbums.filter(
-      (a: any) => a.album_type === "compilation"
+      (a: any) => a.album_type === "compilation",
     ),
   };
 
@@ -116,6 +153,31 @@ export default async function ArtistPage({
               {genre}
             </span>
           ))}
+        </div>
+
+        {/* Rotation Actions: Allows users to add artist to their taste profile */}
+        <div className="mt-10 flex flex-col items-center gap-4">
+          {currentUser ? (
+            <RotationButton
+              spotifyArtistId={id}
+              artistName={artist.name}
+              artistImageUrl={artistImage}
+              initialIsInRotation={isInRotation}
+            />
+          ) : (
+            <Link
+              href="/sign-in"
+              className="px-8 py-3 bg-white text-black font-bold uppercase tracking-widest text-xs hover:bg-neutral-200 transition-colors"
+            >
+              Sign In to Add
+            </Link>
+          )}
+
+          {/* Social Proof: Displays the total number of users following this artist */}
+          <div className="text-neutral-500 text-xs font-mono uppercase tracking-widest">
+            <strong className="text-white">{globalRotationCount}</strong>{" "}
+            {globalRotationCount === 1 ? "Listener" : "Listeners"} in Rotation
+          </div>
         </div>
       </div>
 
