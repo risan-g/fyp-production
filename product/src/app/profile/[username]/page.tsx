@@ -63,7 +63,7 @@ export default async function ProfilePage({
    */
   const [
     syncCountData,
-    // rotationCountData, // <-- Placeholder for future "Artist Rotations" feature
+    rotationCountData, // <--- UNCOMMENTED: Now fetching real data
     amIFollowingData, // Check A: Do I follow them?
     areTheyFollowingMeData, // Check B: Do they follow me?
     ratingsCountData,
@@ -71,11 +71,17 @@ export default async function ProfilePage({
     topRatingsData,
     recentReviewsData,
   ] = await Promise.all([
-    // Sync Count (Calculated via SQL RPC function)
+    // A. Sync Count (Calculated via SQL RPC function)
     supabase.rpc("get_sync_count", { target_user_id: profile.id }),
 
-    // Relationship Check: Am I following them?
-    // Only runs if logged in and viewing someone else.
+    // B. Rotation Count (Real Database Fetch)
+    // Counts how many artists this user follows in the 'artist_follows' table.
+    supabase
+      .from("artist_follows")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", profile.id),
+
+    // C. Relationship Check: Am I following them?
     currentUser && !isOwnProfile
       ? supabase
           .from("follows")
@@ -85,8 +91,7 @@ export default async function ProfilePage({
           .single()
       : Promise.resolve({ data: null }),
 
-    // Relationship Check: Are they following me?
-    // Necessary for the "SYNC BACK" button state.
+    // D. Relationship Check: Are they following me?
     currentUser && !isOwnProfile
       ? supabase
           .from("follows")
@@ -96,14 +101,14 @@ export default async function ProfilePage({
           .single()
       : Promise.resolve({ data: null }),
 
-    // Count Ratings (where rating is not null)
+    // E. Count Ratings
     supabase
       .from("reviews")
       .select("*", { count: "exact", head: true })
       .eq("user_id", profile.id)
       .not("rating", "is", null),
 
-    // Count Reviews (where content exists)
+    // F. Count Reviews
     supabase
       .from("reviews")
       .select("*", { count: "exact", head: true })
@@ -111,7 +116,7 @@ export default async function ProfilePage({
       .not("content", "is", null)
       .neq("content", ""),
 
-    // Get 4 highest rated albums
+    // G. Get 4 highest rated albums
     supabase
       .from("reviews")
       .select("*")
@@ -120,7 +125,7 @@ export default async function ProfilePage({
       .order("rating", { ascending: false })
       .limit(4),
 
-    // Get 3 most recent texts
+    // H. Get 3 most recent texts
     supabase
       .from("reviews")
       .select("*")
@@ -136,7 +141,7 @@ export default async function ProfilePage({
    * Normalise database results into clean variables for the UI.
    */
   const syncCount = syncCountData.data || 0;
-  const rotationCount = 0; // Placeholder
+  const rotationCount = rotationCountData.count || 0; // <--- UPDATED: Uses real count
 
   // Convert relationship checks to booleans
   const isFollowing = !!amIFollowingData.data;
