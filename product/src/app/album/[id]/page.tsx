@@ -15,23 +15,23 @@ import ReviewList from "@/components/ReviewList";
 export default async function AlbumPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = params;
+  const { id } = await params;
 
   // Fetch the album details.
   const album = await fetchSpotifyData(
-    `https://api.spotify.com/v1/albums/${id}`
+    `https://api.spotify.com/v1/albums/${id}`,
   );
 
   // Calculate the total length of the album.
   const totalDurationMs = album.tracks.items.reduce(
     (acc: number, track: any) => acc + track.duration_ms,
-    0
+    0,
   );
   const totalMinutes = Math.floor(totalDurationMs / 60000);
   const totalSeconds = String(
-    Math.floor((totalDurationMs % 60000) / 1000)
+    Math.floor((totalDurationMs % 60000) / 1000),
   ).padStart(2, "0");
   const durationString = `${totalMinutes}:${totalSeconds}`;
 
@@ -115,7 +115,7 @@ export default async function AlbumPage({
                   <span className="text-gray-500 text-sm ml-4 flex-shrink-0">
                     {Math.floor(track.duration_ms / 60000)}:
                     {String(
-                      Math.floor((track.duration_ms % 60000) / 1000)
+                      Math.floor((track.duration_ms % 60000) / 1000),
                     ).padStart(2, "0")}
                   </span>
                 </li>

@@ -17,9 +17,6 @@ interface SyncButtonProps {
  *
  * The core interaction point for the social graph.
  * This component manages the "4-State Relationship" logic visually.
- *
- * It uses Optimistic UI updates to provide instant feedback,
- * while handling the server request in the background.
  */
 export default function SyncButton({
   targetUserId,
@@ -30,23 +27,28 @@ export default function SyncButton({
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Track hover state to switch from "Status" to "Action" text.
+  const [isHovered, setIsHovered] = useState(false);
+
   /**
    * State Logic: The 4-State Relationship Engine
    * Determines the text label based on the bi-directional relationship.
    */
   const getButtonState = () => {
-    // 1. Mutual Connection (Both sides follow)
-    if (isFollowing && isTargetFollowingMe) return "SYNCED";
+    if (isLoading) return "...";
 
-    // 2. One-way (I follow them, they don't follow back)
-    if (isFollowing && !isTargetFollowingMe) return "PENDING";
+    // Not Following (Action State)
+    if (!isFollowing) {
+      if (isTargetFollowingMe) return "SYNC BACK";
+      return "SYNC";
+    }
 
-    // 3. Incoming Request (They follow me, I don't follow them)
-    // This prompts the user to "close the loop".
-    if (!isFollowing && isTargetFollowingMe) return "SYNC BACK";
+    // Following (Destructive/Status State)
+    if (isHovered) return "UNSYNC";
 
-    // 4. Stranger (No connection)
-    return "SYNC";
+    // Status State
+    if (isTargetFollowingMe) return "SYNCED"; // Mutual
+    return "PENDING"; // One-Way
   };
 
   const buttonState = getButtonState();
@@ -81,35 +83,39 @@ export default function SyncButton({
    * Maps the current relationship state to the Industrial design language.
    */
   const getButtonStyles = () => {
-    switch (buttonState) {
-      case "SYNCED":
-        // White block: Represents a solid, established connection.
-        return "bg-white text-black border-white hover:bg-gray-200";
-
-      case "PENDING":
-        // Dimmed/Hollow: Represents a waiting state or "Orbit".
-        return "bg-transparent text-gray-400 border-gray-600 hover:border-white hover:text-white";
-
-      case "SYNC BACK":
-        // Pulsing White: Urgency. Draws attention to the incoming follow.
+    // Not Following
+    if (!isFollowing) {
+      if (isTargetFollowingMe) {
         return "bg-white text-black border-white animate-pulse hover:scale-105";
-
-      default: // "SYNC"
-        // White Outline: Standard action state.
-        return "bg-transparent text-white border-white hover:bg-white hover:text-black";
+      }
+      return "bg-transparent text-white border-white hover:bg-white hover:text-black";
     }
+
+    // Following (Hover = Red)
+    if (isHovered) {
+      return "bg-transparent text-red-500 border-red-500";
+    }
+
+    // Status Styles
+    if (isTargetFollowingMe) {
+      return "bg-white text-black border-white"; // Solid for Mutual
+    }
+
+    return "bg-transparent text-neutral-400 border-neutral-600"; // Hollow for Pending
   };
 
   return (
     <button
       onClick={handleSync}
       disabled={isLoading}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className={`
         px-6 py-2 font-bold uppercase tracking-widest text-xs border transition-all duration-300
         ${getButtonStyles()}
       `}
     >
-      {isLoading ? "..." : buttonState}
+      {buttonState}
     </button>
   );
 }

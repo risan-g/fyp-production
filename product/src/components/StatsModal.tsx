@@ -18,7 +18,6 @@ interface StatsModalProps {
  * StatsModal (Client Component)
  *
  * A high-performance, interactive dashboard overlay.
- *
  */
 export default function StatsModal({
   userId,
@@ -84,31 +83,39 @@ export default function StatsModal({
    * Triggered by: Tab Change OR Page Increment (Scroll)
    */
   useEffect(() => {
+    let isCancelled = false;
+
     const fetchData = async () => {
       setLoading(true);
-      let newItems: any[] = [];
 
       try {
+        let result: any[] = [];
         if (activeTab === "rotation") {
-          newItems = await getRotationList(userId, page);
+          result = await getRotationList(userId, page);
         } else {
-          newItems = await getSyncList(userId, page);
+          result = await getSyncList(userId, page);
         }
 
-        if (newItems.length === 0) {
+        if (isCancelled) return;
+
+        if (result.length === 0) {
           setHasMore(false);
         } else {
           // If page 0, replace list. If page > 0, append to list.
-          setItems((prev) => (page === 0 ? newItems : [...prev, ...newItems]));
+          setItems((prev) => (page === 0 ? result : [...prev, ...result]));
         }
       } catch (err) {
-        console.error("Failed to load list", err);
+        if (!isCancelled) console.error("Failed to load list", err);
       } finally {
-        setLoading(false);
+        if (!isCancelled) setLoading(false);
       }
     };
 
     fetchData();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [activeTab, page, userId]);
 
   return (
@@ -233,7 +240,7 @@ export default function StatsModal({
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-neutral-800 text-neutral-500 font-mono text-xs">
-                          {user.username.charAt(0).toUpperCase()}
+                          {user.username?.charAt(0).toUpperCase() || "?"}
                         </div>
                       )}
                     </div>
@@ -245,7 +252,7 @@ export default function StatsModal({
                     onClick={onClose}
                     className="text-base font-bold text-neutral-300 truncate group-hover:text-white transition-colors"
                   >
-                    {user.username}
+                    {user.username || "Unknown"}
                   </Link>
 
                   {/* Sync Button */}
@@ -255,7 +262,7 @@ export default function StatsModal({
                         <SyncButton
                           targetUserId={user.id}
                           initialIsFollowing={user.is_synced}
-                          isTargetFollowingMe={false}
+                          isTargetFollowingMe={user.is_following_me}
                         />
                       </div>
                     )}
