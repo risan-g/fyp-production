@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import AvatarUpload from "@/components/Avatar-Upload";
 import SyncButton from "@/components/SyncButton";
+import ProfileStats from "@/components/ProfileStats"; // NEW IMPORT
 
 /**
  * Helper utility to format dates into a readable string.
@@ -63,7 +64,7 @@ export default async function ProfilePage({
    */
   const [
     syncCountData,
-    rotationCountData, // <--- UNCOMMENTED: Now fetching real data
+    rotationCountData,
     amIFollowingData, // Check A: Do I follow them?
     areTheyFollowingMeData, // Check B: Do they follow me?
     ratingsCountData,
@@ -71,17 +72,17 @@ export default async function ProfilePage({
     topRatingsData,
     recentReviewsData,
   ] = await Promise.all([
-    // A. Sync Count (Calculated via SQL RPC function)
+    // Sync Count
     supabase.rpc("get_sync_count", { target_user_id: profile.id }),
 
-    // B. Rotation Count (Real Database Fetch)
+    // Rotation Count
     // Counts how many artists this user follows in the 'artist_follows' table.
     supabase
       .from("artist_follows")
       .select("*", { count: "exact", head: true })
       .eq("user_id", profile.id),
 
-    // C. Relationship Check: Am I following them?
+    // Relationship Check. Is User A following User B
     currentUser && !isOwnProfile
       ? supabase
           .from("follows")
@@ -91,7 +92,7 @@ export default async function ProfilePage({
           .single()
       : Promise.resolve({ data: null }),
 
-    // D. Relationship Check: Are they following me?
+    // Relationship Check: Is User B following User A.
     currentUser && !isOwnProfile
       ? supabase
           .from("follows")
@@ -101,14 +102,14 @@ export default async function ProfilePage({
           .single()
       : Promise.resolve({ data: null }),
 
-    // E. Count Ratings
+    // Count Ratings
     supabase
       .from("reviews")
       .select("*", { count: "exact", head: true })
       .eq("user_id", profile.id)
       .not("rating", "is", null),
 
-    // F. Count Reviews
+    // Count Reviews
     supabase
       .from("reviews")
       .select("*", { count: "exact", head: true })
@@ -116,7 +117,7 @@ export default async function ProfilePage({
       .not("content", "is", null)
       .neq("content", ""),
 
-    // G. Get 4 highest rated albums
+    // Get 4 highest rated albums
     supabase
       .from("reviews")
       .select("*")
@@ -125,7 +126,7 @@ export default async function ProfilePage({
       .order("rating", { ascending: false })
       .limit(4),
 
-    // H. Get 3 most recent texts
+    // Get 3 most recent texts
     supabase
       .from("reviews")
       .select("*")
@@ -141,7 +142,7 @@ export default async function ProfilePage({
    * Normalise database results into clean variables for the UI.
    */
   const syncCount = syncCountData.data || 0;
-  const rotationCount = rotationCountData.count || 0; // <--- UPDATED: Uses real count
+  const rotationCount = rotationCountData.count || 0;
 
   // Convert relationship checks to booleans
   const isFollowing = !!amIFollowingData.data;
@@ -192,25 +193,12 @@ export default async function ProfilePage({
             <div className="mb-8 h-8"></div>
           ) : null}
 
-          {/*
-             Displays social metrics (Syncs & Rotation).
-          */}
-          <div className="grid grid-cols-2 gap-16 border-y border-neutral-800 py-6 mb-8 w-full max-w-md mx-auto">
-            {/* Syncs */}
-            <div className="text-center cursor-pointer hover:opacity-70 transition-opacity">
-              <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mb-2">
-                Syncs
-              </p>
-              <p className="text-4xl font-mono text-white">{syncCount}</p>
-            </div>
-            {/* Rotation */}
-            <div className="text-center cursor-pointer hover:opacity-70 transition-opacity">
-              <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mb-2">
-                Rotation
-              </p>
-              <p className="text-4xl font-mono text-white">{rotationCount}</p>
-            </div>
-          </div>
+          {/* Replaced Static Stats DIV with Interactive Component */}
+          <ProfileStats
+            userId={profile.id}
+            syncCount={syncCount}
+            rotationCount={rotationCount}
+          />
 
           {/* Ratings/Reviews */}
           <div className="flex gap-8 text-sm text-neutral-500">
