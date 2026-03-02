@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
+import NotificationBell from "@/components/NotificationBell"; // Added the Notification Bell import
 
 /**
  * Main Navigation Component
@@ -151,49 +152,52 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/* User Session Management*/}
-      <div className="relative">
+      <div className="flex items-center gap-4 relative">
+        {" "}
         {user ? (
-          <div>
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center hover:bg-neutral-700 transition-colors overflow-hidden border border-neutral-700"
-            >
-              {/* Show Real Avatar or Fallback Initial */}
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-white font-bold">
-                  {username ? username[0].toUpperCase() : "?"}
-                </span>
-              )}
-            </button>
+          <>
+            <NotificationBell />
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center hover:bg-neutral-700 transition-colors overflow-hidden border border-neutral-700"
+              >
+                {/* Show Real Avatar or Fallback Initial */}
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white font-bold">
+                    {username ? username[0].toUpperCase() : "?"}
+                  </span>
+                )}
+              </button>
 
-            {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                <button
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    if (username) router.push(`/profile/${username}`);
-                  }}
-                  className="w-full px-4 py-2 border-b border-gray-200 hover:bg-gray-50 text-left"
-                >
-                  <p className="text-sm text-gray-500">Signed in as</p>
-                  <p className="text-sm font-medium">@{username || "..."}</p>
-                </button>
-                <button
-                  onClick={handleSignOut}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  Sign Out
-                </button>
-              </div>
-            )}
-          </div>
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      if (username) router.push(`/profile/${username}`);
+                    }}
+                    className="w-full px-4 py-2 border-b border-gray-200 hover:bg-gray-50 text-left"
+                  >
+                    <p className="text-sm text-gray-500">Signed in as</p>
+                    <p className="text-sm font-medium">@{username || "..."}</p>
+                  </button>
+                  <button
+                    onClick={handleSignOut}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
         ) : (
           <button
             className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
