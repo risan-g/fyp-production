@@ -17,7 +17,7 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
-      <body className="bg-gray-50 min-h-screen">
+      <body className="min-h-screen">
         {/* Persistent Navigation Bar across all application routes */}
         <NavBar />
 
