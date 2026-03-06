@@ -27,7 +27,7 @@ export default async function AllRatingsPage(props: {
   const username = decodeURIComponent(params.username);
 
   /**
-   * Pagination Setup
+   * Pagination
    */
   let currentPage = 1;
   if (searchParams.page && !isNaN(Number(searchParams.page))) {
@@ -48,9 +48,7 @@ export default async function AllRatingsPage(props: {
   if (!profile) return notFound();
 
   /**
-   * Database Query:
-   * Fetches ratings from 'reviews' table where rating is NOT null.
-   * No need for external API calls because metadata is cached.
+   * Fetch ratings from 'reviews' table where rating is NOT null.
    */
   const { data: ratings, count } = await supabase
     .from("reviews")
@@ -139,7 +137,7 @@ export default async function AllRatingsPage(props: {
                 className="group flex flex-col gap-3"
               >
                 <div className="relative aspect-square bg-neutral-900 rounded-xl overflow-hidden border border-neutral-800 shadow-sm group-hover:border-neutral-600 transition-colors">
-                  {/* Image rendering using cached data */}
+                  {/* Image rendering */}
                   {rating.album_image_url ? (
                     <img
                       src={rating.album_image_url}

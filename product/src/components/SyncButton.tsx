@@ -16,7 +16,6 @@ interface SyncButtonProps {
  * SyncButton (Client Component)
  *
  * The core interaction point for the social graph.
- * This component manages the "4-State Relationship" logic visually.
  */
 export default function SyncButton({
   targetUserId,
@@ -61,16 +60,12 @@ export default function SyncButton({
     const previousState = isFollowing;
 
     // Flips the UI state immediately before the server responds.
-    // This makes the app feel "Native" and zero-latency.
     setIsFollowing(!isFollowing);
 
     try {
       // Perform the actual database mutation
       await toggleFollow(targetUserId);
     } catch (error) {
-      // ROLLBACK:
-      // If the server fails, revert the UI
-      // so the user knows the action didn't stick.
       setIsFollowing(previousState);
       console.error("Sync failed:", error);
     } finally {
@@ -80,28 +75,28 @@ export default function SyncButton({
 
   /**
    * Visual System
-   * Maps the current relationship state to the Industrial design language.
+   * Maps the current relationship state to the Brutalist design language.
    */
   const getButtonStyles = () => {
     // Not Following
     if (!isFollowing) {
       if (isTargetFollowingMe) {
-        return "bg-white text-black border-white animate-pulse hover:scale-105";
+        return "bg-black text-white border-black animate-pulse hover:bg-accent-red hover:border-accent-red shadow-[2px_2px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]";
       }
-      return "bg-transparent text-white border-white hover:bg-white hover:text-black";
+      return "bg-transparent text-black border-black hover:bg-black hover:text-white shadow-[2px_2px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]";
     }
 
     // Following (Hover = Red)
     if (isHovered) {
-      return "bg-transparent text-red-500 border-red-500";
+      return "bg-white text-accent-red border-accent-red shadow-none translate-x-[0px] translate-y-[0px]";
     }
 
     // Status Styles
     if (isTargetFollowingMe) {
-      return "bg-white text-black border-white"; // Solid for Mutual
+      return "bg-black text-white border-black shadow-none translate-x-[0px] translate-y-[0px]"; // Solid for Mutual
     }
 
-    return "bg-transparent text-neutral-400 border-neutral-600"; // Hollow for Pending
+    return "bg-white text-black/40 border-black/40 shadow-none translate-x-[0px] translate-y-[0px]"; // Hollow for Pending
   };
 
   return (
@@ -111,7 +106,7 @@ export default function SyncButton({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={`
-        px-6 py-2 font-bold uppercase tracking-widest text-xs border transition-all duration-300
+        px-4 py-1.5 font-bold uppercase tracking-[0.2em] text-[10px] font-mono border-2 transition-all duration-300
         ${getButtonStyles()}
       `}
     >

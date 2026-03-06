@@ -92,9 +92,8 @@ export default function AvatarUpload({
           <img
             src={avatarUrl}
             alt="Avatar"
-            className={`w-full h-full object-cover transition-opacity duration-300 ${
-              uploading ? "opacity-50" : "opacity-100"
-            }`}
+            className={`w-full h-full object-cover transition-opacity duration-300 ${uploading ? "opacity-50" : "opacity-100"
+              }`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-neutral-500 bg-neutral-900">

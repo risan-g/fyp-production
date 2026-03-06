@@ -14,11 +14,6 @@ interface ProfileStatsProps {
  *
  * This acts as the "Trigger" for the interactive stats system.
  * It replaces the static numbers on the Profile Page.
- *
- * Responsibility:
- * 1. Displays the high-level metrics (Syncs/Rotation).
- * 2. Manages the open/closed state of the Modal.
- * 3. Sets the initial context (e.g.clicking "Syncs" opens the Syncs tab).
  */
 export default function ProfileStats({
   userId,
@@ -29,7 +24,7 @@ export default function ProfileStats({
   const [activeTab, setActiveTab] = useState<"syncs" | "rotation">("syncs");
 
   /**
-   * Helper to open the modal with the correct tab pre-selected.
+   * Helper to open the modal.
    */
   const openModal = (tab: "syncs" | "rotation") => {
     setActiveTab(tab);
@@ -38,18 +33,17 @@ export default function ProfileStats({
 
   return (
     <>
-      {/* THE TRIGGER AREA */}
-      <div className="grid grid-cols-2 gap-16 border-y border-neutral-800 py-6 mb-8 w-full max-w-md mx-auto">
+      {/* TRIGGER AREA */}
+      <div className="grid grid-cols-2 gap-4 border-y-[3px] border-black py-4 mb-12 w-full max-w-md mx-auto">
         {/* Syncs Trigger */}
         <button
           onClick={() => openModal("syncs")}
-          className="text-center group transition-opacity hover:opacity-70 focus:outline-none"
+          className="text-center group border-[3px] border-transparent hover:border-black p-4 transition-all hover:bg-black hover:shadow-[4px_4px_0px_rgba(255,0,0,1)] focus:outline-none flex flex-col items-center justify-center cursor-pointer"
         >
-          <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mb-2 group-hover:text-white transition-colors">
-            Syncs
+          <p className="text-[10px] text-black/60 font-mono font-bold uppercase tracking-[0.2em] mb-2 group-hover:text-white/60 transition-colors">
+            "SYNCS"
           </p>
-          {/* Underline Effect: Mimics a link but stays purely CSS */}
-          <p className="text-4xl font-mono text-white underline decoration-transparent group-hover:decoration-white/30 underline-offset-8 transition-all">
+          <p className="text-4xl font-black font-sans text-black group-hover:text-white transition-colors">
             {syncCount}
           </p>
         </button>
@@ -57,12 +51,12 @@ export default function ProfileStats({
         {/* Rotation Trigger */}
         <button
           onClick={() => openModal("rotation")}
-          className="text-center group transition-opacity hover:opacity-70 focus:outline-none"
+          className="text-center group border-[3px] border-transparent hover:border-black p-4 transition-all hover:bg-black hover:shadow-[4px_4px_0px_rgba(255,0,0,1)] focus:outline-none flex flex-col items-center justify-center cursor-pointer"
         >
-          <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mb-2 group-hover:text-white transition-colors">
-            Rotation
+          <p className="text-[10px] text-black/60 font-mono font-bold uppercase tracking-[0.2em] mb-2 group-hover:text-white/60 transition-colors">
+            "ROTATION"
           </p>
-          <p className="text-4xl font-mono text-white underline decoration-transparent group-hover:decoration-white/30 underline-offset-8 transition-all">
+          <p className="text-4xl font-black font-sans text-black group-hover:text-white transition-colors">
             {rotationCount}
           </p>
         </button>
