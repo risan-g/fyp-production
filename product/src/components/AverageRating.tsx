@@ -10,9 +10,7 @@ interface AverageRatingProps {
 /**
  * Average Rating Display.
  *
- * This component fetches every valid rating submitted by users for this specific album,
- * calculates the mathematical average, and displays it as a large "Score"
- * in the album header.
+ * This component fetches every valid rating submitted by users and display average.
  */
 export default function AverageRating({ albumId }: AverageRatingProps) {
   const supabase = createClient();
@@ -25,11 +23,18 @@ export default function AverageRating({ albumId }: AverageRatingProps) {
   // Fetch the data as soon as the component loads
   useEffect(() => {
     loadAverageRating();
+
+    const handleUpdate = () => {
+      loadAverageRating();
+    };
+
+    window.addEventListener("review-updated", handleUpdate);
+    return () => window.removeEventListener("review-updated", handleUpdate);
   }, [albumId]);
 
   const loadAverageRating = async () => {
     try {
-      // Get ALL ratings for this album from the 'reviews' table.
+      // Get aLL ratings for this album from the 'reviews' table.
       const { data: allRatings, error: ratingsError } = await supabase
         .from("reviews")
         .select("rating")
@@ -46,7 +51,7 @@ export default function AverageRating({ albumId }: AverageRatingProps) {
         );
         const avg = sum / allRatings.length;
 
-        // Round to 1 decimal place (e.g., 84.5)
+        // Round to 1 decimal place
         setAverageRating(Math.round(avg * 10) / 10);
         setTotalRatings(allRatings.length);
       }
@@ -58,53 +63,36 @@ export default function AverageRating({ albumId }: AverageRatingProps) {
   };
 
   return (
-    <div className="flex items-center gap-1 h-82">
-      {/* Rotated 90 degrees */}
-      <div className="flex flex-col" style={{ transform: "rotate(-90deg)" }}>
-        <span className="text-2xl text-neutral-500 uppercase tracking-widest">
-          AVERAGE
-        </span>
-        <span className="text-2xl text-neutral-500 uppercase tracking-widest">
-          RATING
-        </span>
-      </div>
+    <div className="flex flex-col items-end relative group">
+      {/* Top Label */}
+      <span className="text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em] mb-[-15px] z-10 mr-4 bg-white px-2 border-[2px] border-black">
+        "AVERAGE RATING"
+      </span>
 
       {/* The Big Score Number */}
-      <div className="flex flex-col">
+      <div className="flex items-baseline border-[3px] border-black px-6 py-4 shadow-[8px_8px_0px_rgba(0,0,0,1)] bg-white">
         {(() => {
-          if (loading) {
+          if (loading || averageRating === null) {
             return (
               <span
-                className="font-bold text-neutral-800 leading-none"
-                style={{ fontSize: "160px" }}
+                className="font-black font-sans tracking-tighter text-black/20 leading-none"
+                style={{ fontSize: "110px" }}
               >
                 --
               </span>
             );
           }
-          // No ratings yet
-          if (averageRating === null) {
-            return (
-              <span
-                className="font-bold text-neutral-700 leading-none"
-                style={{ fontSize: "160px" }}
-              >
-                --
-              </span>
-            );
-          }
-          // Actual Score
           return (
             <span
-              className="font-bold text-white leading-none"
-              style={{ fontSize: "130px" }}
+              className="font-black font-sans tracking-tighter text-black leading-none drop-shadow-md group-hover:text-accent-red transition-colors"
+              style={{ fontSize: "110px" }}
             >
               {averageRating}
             </span>
           );
         })()}
 
-        <span className="text-3xl text-neutral-500">/ 100</span>
+        <span className="text-3xl font-sans font-black text-black/40 tracking-tighter ml-2">/100</span>
       </div>
     </div>
   );

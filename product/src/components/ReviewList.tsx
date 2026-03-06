@@ -46,59 +46,81 @@ export default function ReviewList({ albumId }: { albumId: string }) {
     };
 
     fetchData();
+
+    // Listen for custom event to refetch data automatically when the user posts/updates a review
+    const handleUpdate = () => {
+      fetchData();
+    };
+
+    window.addEventListener("review-updated", handleUpdate);
+    return () => window.removeEventListener("review-updated", handleUpdate);
   }, [albumId]);
 
   // If there are no reviews, show a simple message
   if (reviews.length === 0)
     return (
-      <div className="text-neutral-600 text-center mt-12 text-sm">
-        No reviews yet.
+      <div className="border-[3px] border-black border-dashed py-16 text-center bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)] mt-12">
+        <span className="text-black/50 font-mono text-[10px] uppercase font-bold tracking-[0.2em]">NO REVIEWS PUBLISHED.</span>
       </div>
     );
 
   return (
-    <div className="mt-12 border-t border-neutral-900 pt-12">
-      <h3 className="text-xl font-bold mb-8 text-white">Reviews</h3>
-      <div className="space-y-8">
+    <div className="mt-16 pt-8">
+      <div className="flex items-center gap-4 mb-8">
+        <h2 className="text-sm text-black font-mono font-bold uppercase tracking-[0.2em] flex items-center gap-2">
+          <span className="w-2 h-2 bg-accent-red flex-shrink-0"></span>
+          "COMMUNITY REVIEWS"
+        </h2>
+      </div>
+      <div className="space-y-12">
         {reviews.map((review) => (
-          <div key={review.id} className="flex gap-4">
-            {/* Avatar Circle */}
-            <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center overflow-hidden shrink-0 border border-neutral-800">
+          <div key={review.id} className="flex flex-col sm:flex-row gap-6 border-[3px] border-black bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)] p-6 md:p-8">
+            {/* Avatar Square */}
+            <div className="w-16 h-16 bg-white border-[3px] border-black flex items-center justify-center overflow-hidden shrink-0 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
               {review.profiles?.avatar_url ? (
                 <img
                   src={review.profiles.avatar_url}
                   alt="User"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-all duration-300"
                 />
               ) : (
-                <span className="text-neutral-400 text-xs font-bold">
+                <span className="text-black text-xl font-mono font-bold">
                   {review.profiles?.username?.[0]?.toUpperCase() || "?"}
                 </span>
               )}
             </div>
 
-            <div className="flex-1">
+            <div className="flex-1 flex flex-col">
               {/* Header: Username, Time, and Rating Badge */}
-              <div className="flex items-center gap-3 mb-2">
-                <span className="font-bold text-white text-sm">
-                  {review.profiles?.username || "Unknown User"}
+              <div className="flex flex-wrap items-center gap-4 mb-6 border-b-[2px] border-black/10 pb-4">
+                <span className="font-bold font-sans text-xl uppercase tracking-tight text-black hover:underline decoration-accent-red decoration-2 underline-offset-4 cursor-pointer">
+                  {review.profiles?.username || "UNKNOWN USER"}
                 </span>
-                <span className="text-xs text-neutral-600">
+
+                <div className="h-4 w-[2px] bg-black/20 hidden sm:block"></div>
+
+                <span className="text-[10px] text-black/40 font-mono font-bold uppercase tracking-[0.2em]">
                   {timeAgo(review.created_at)}
                 </span>
 
+                <div className="flex-grow"></div>
+
                 {/* Only show the rating badge if the user actually rated the album */}
                 {review.rating !== null && (
-                  <span className="px-2 py-0.5 bg-white text-black text-xs font-bold rounded">
-                    {review.rating}
-                  </span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-black font-black text-3xl font-sans tracking-tighter underline decoration-accent-red decoration-4">{review.rating}</span>
+                    <span className="text-[10px] font-sans tracking-tighter font-bold text-black/40">/100</span>
+                  </div>
                 )}
               </div>
 
               {/* The Review Content */}
-              <p className="text-neutral-300 text-sm leading-relaxed max-w-4xl">
-                {review.content}
-              </p>
+              <div className="relative">
+                <div className="absolute -top-3 left-4 bg-white px-2 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-accent-red">"REVIEW"</div>
+                <p className="text-black text-lg font-serif leading-relaxed whitespace-pre-wrap max-w-4xl border-[2px] border-black p-6 bg-neutral-50 shadow-inner">
+                  {review.content}
+                </p>
+              </div>
             </div>
           </div>
         ))}

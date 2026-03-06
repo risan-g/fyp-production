@@ -6,21 +6,15 @@ import { toggleRotation } from "@/app/actions/rotation";
 interface RotationButtonProps {
   /** The unique Spotify ID used for the database composite key. */
   spotifyArtistId: string;
-  /** Cached Metadata: Passed to server to populate the cache if adding. */
   artistName: string;
   artistImageUrl: string | null;
-  /** Server-side state: Is this artist currently in the user's rotation? */
   initialIsInRotation: boolean;
 }
 
 /**
  * RotationButton (Client Component)
  *
- * The primary interaction mechanism.
  * Allows users to add specific artists to their tracked rotation.
- *
- * Distinct from 'SyncButton', this component handles
- * data caching alongside the relationship toggle.
  */
 export default function RotationButton({
   spotifyArtistId,
@@ -28,26 +22,20 @@ export default function RotationButton({
   artistImageUrl,
   initialIsInRotation,
 }: RotationButtonProps) {
-  // Local state initialized with server data for immediate rendering.
   const [isInRotation, setIsInRotation] = useState(initialIsInRotation);
   const [isLoading, setIsLoading] = useState(false);
 
   /**
-   * Interaction Handler
    * Implements the UI pattern.
    */
   const handleToggle = async () => {
     setIsLoading(true);
     const previousState = isInRotation;
 
-    // Flip the visual state immediately before the network request starts,
-    // making the app feel snappy.
     setIsInRotation(!isInRotation);
 
     try {
       // Trigger Server Action
-      // We pass the metadata (name/image) here so the server can cache it
-      // if this is a new "Add" action.
       await toggleRotation(spotifyArtistId, artistName, artistImageUrl);
     } catch (error) {
       // ROLLBACK:
@@ -65,12 +53,12 @@ export default function RotationButton({
       onClick={handleToggle}
       disabled={isLoading}
       className={`
-        px-8 py-3 font-bold uppercase tracking-widest text-xs transition-all duration-300
-        flex items-center gap-2
-        ${
-          isInRotation
-            ? "bg-transparent text-white border border-neutral-700 hover:border-red-500 hover:text-red-500" // State: In Rotation (Passive -> Destructive on Hover)
-            : "bg-white text-black border border-white hover:bg-neutral-200" // State: Add (Active Call To Action)
+        px-6 py-3 font-mono font-bold uppercase tracking-[0.2em] text-[10px] sm:text-xs transition-all duration-200
+        flex items-center justify-center gap-2 border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]
+        hover:-translate-y-1 hover:shadow-[8px_8px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-none
+        ${isInRotation
+          ? "bg-white text-accent-red hover:bg-black hover:text-white hover:border-black"
+          : "bg-black text-white hover:bg-accent-red"
         }
       `}
     >
@@ -78,13 +66,13 @@ export default function RotationButton({
         "..."
       ) : isInRotation ? (
         <>
-          <span>In Rotation</span>
-          <span className="text-lg leading-none mb-0.5">−</span>
+          <span>IN ROTATION</span>
+          <span className="text-lg leading-none mb-0.5 font-sans font-black">−</span>
         </>
       ) : (
         <>
-          <span>Add to Rotation</span>
-          <span className="text-lg leading-none mb-0.5">+</span>
+          <span>ADD TO ROTATION</span>
+          <span className="text-lg leading-none mb-0.5 font-sans font-black">+</span>
         </>
       )}
     </button>

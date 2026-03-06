@@ -11,9 +11,6 @@ interface RatingProps {
   albumImage: string;
 }
 
-/**
- * Helper: Translates the 0-100 score into text.
- */
 const getTranslatorText = (value: number) => {
   if (value === 0) return "(NOT GOOD)";
   if (value === 100) return "(CLASSIC)";
@@ -53,7 +50,6 @@ export default function Rating({
   // Track if user physically touched slider
   const userHasInteracted = useRef(false);
 
-  // State for Data/Auth
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -101,19 +97,16 @@ export default function Rating({
     // Calculate distance from top of the track
     let newTop = clientY - trackRect.top;
 
-    // Convert to percentage (0 to 1)
     let percent = newTop / trackRect.height;
     percent = Math.max(0, Math.min(1, percent));
     return (1 - percent) * 100;
   };
 
-  // Start dragging
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!user || saving) return;
     userHasInteracted.current = true;
     isDragging.current = true;
 
-    // Visual feedback
     if (knobRef.current) {
       knobRef.current.style.cursor = "grabbing";
       knobRef.current.style.backgroundColor = "#111";
@@ -121,19 +114,16 @@ export default function Rating({
     document.body.style.cursor = "grabbing";
     e.preventDefault();
 
-    // Attach global listeners to handle dragging outside the component area
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
   };
 
-  // While dragging
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging.current) return;
     const value = updateRatingFromY(e.clientY);
     if (value !== undefined) setRating(Math.round(value));
   };
 
-  // Stop dragging
   const handleMouseUp = () => {
     isDragging.current = false;
     if (knobRef.current) {
@@ -145,7 +135,6 @@ export default function Rating({
     document.removeEventListener("mouseup", handleMouseUp);
   };
 
-  // Handle clicking the track directly (jump to value)
   const handleClickTrack = (e: React.MouseEvent) => {
     if (!user || saving) return;
     if (e.target === knobRef.current) return;
@@ -191,6 +180,7 @@ export default function Rating({
       setRating(0);
       setOriginalRating(null);
       userHasInteracted.current = false;
+      window.dispatchEvent(new CustomEvent("review-updated"));
       router.refresh();
     } catch (err: any) {
       console.error("Error removing rating:", err);
@@ -234,6 +224,7 @@ export default function Rating({
 
       setOriginalRating(rating);
       userHasInteracted.current = false;
+      window.dispatchEvent(new CustomEvent("review-updated"));
       router.refresh();
     } catch (err: any) {
       console.error("Error saving rating:", err);
@@ -251,8 +242,8 @@ export default function Rating({
 
   if (loading) {
     return (
-      <div className="bg-black-900 rounded-lg p-4 flex flex-col items-center h-[520px] justify-center">
-        <div className="text-neutral-500">Loading...</div>
+      <div className="border-[3px] border-black bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)] p-6 flex flex-col items-center h-[520px] justify-center">
+        <div className="text-black/50 font-mono font-bold uppercase tracking-[0.2em]">LOADING RATING...</div>
       </div>
     );
   }
@@ -264,83 +255,79 @@ export default function Rating({
   const isSaved = originalRating !== null;
 
   return (
-    <div className="bg-black-900 rounded-lg p-4 flex flex-col items-center">
-      <div className="mb-10 h-28 flex flex-col justify-center items-center">
-        <label className="block text-xs text-neutral-500 mb-2">
-          {user ? "Your Rating" : ""}
+    <div className="border-[3px] border-black bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)] p-6 flex flex-col items-center">
+      <div className="mb-10 h-32 flex flex-col justify-center items-center">
+        <label className="block text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em] mb-4">
+          {user ? '"YOUR RATING"' : '""'}
         </label>
-        <div className="text-7xl font-bold text-white leading-none">
+        <div className="text-8xl font-black font-sans tracking-tighter text-black leading-none drop-shadow-md">
           {rating}
         </div>
-        <div className="font-mono text-lg text-neutral-500 mt-2 uppercase h-5">
+        <div className="font-mono text-sm tracking-[0.2em] font-bold text-accent-red mt-4 uppercase h-5 text-center px-4 bg-black/5">
           {getTranslatorText(rating)}
         </div>
       </div>
 
       <div
-        className="h-72 w-20 cursor-pointer flex justify-center relative"
+        className="h-72 w-32 cursor-pointer flex justify-center relative touch-none"
         ref={sliderWrapperRef}
         onClick={handleClickTrack}
       >
-        <div className="w-1 h-full bg-neutral-700 absolute left-1/2 -translate-x-1/2" />
-        <div className="absolute top-0 left-[calc(50%+10px)] w-2.5 h-full flex flex-col justify-between pointer-events-none">
+        <div className="w-2 h-full bg-black absolute left-1/2 -translate-x-1/2" />
+        <div className="absolute top-0 left-[calc(50%+16px)] w-4 h-full flex flex-col justify-between pointer-events-none">
           {[...Array(11)].map((_, i) => (
-            <div key={i} className="w-full h-0.5 bg-neutral-600" />
+            <div key={i} className="w-full h-1 bg-black/20" />
           ))}
         </div>
         <div
           ref={knobRef}
-          className={`w-12 h-5 bg-white absolute left-1/2 -translate-x-1/2 -translate-y-1/2 border-2 border-white z-10 ${
-            user ? "cursor-grab" : "cursor-not-allowed opacity-50"
-          }`}
+          className={`w-16 h-8 bg-black absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 shadow-[4px_4px_0px_rgba(255,0,0,1)] hover:bg-accent-red hover:shadow-none transition-colors ${user ? "cursor-grab" : "cursor-not-allowed opacity-50"
+            }`}
           style={{ top: `${100 - rating}%` }}
           onMouseDown={handleMouseDown}
         />
       </div>
 
-      <div className="mt-10 flex flex-col items-center gap-2 h-20 w-full">
+      <div className="mt-12 flex flex-col items-center gap-4 min-h-[5rem] w-full">
         {user ? (
           <>
             {/* Save/Cancel Buttons */}
             {hasChanged ? (
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={handleCancel}
-                  disabled={saving}
-                  className="px-6 py-2 bg-neutral-700 text-white font-medium rounded-lg hover:bg-neutral-600 disabled:opacity-50 transition-colors"
-                >
-                  Cancel
-                </button>
+              <div className="flex flex-col gap-3 w-full">
                 <button
                   onClick={handleSaveRating}
                   disabled={saving}
-                  className="px-6 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-neutral-700 transition-colors"
+                  className="w-full py-4 bg-black text-white text-[10px] font-mono font-bold uppercase tracking-[0.2em] border-[3px] border-black shadow-[4px_4px_0px_rgba(255,0,0,1)] hover:bg-accent-red hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] disabled:opacity-50 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_rgba(255,0,0,1)] disabled:hover:bg-black transition-all cursor-pointer"
                 >
-                  {saving ? "Saving..." : "Confirm"}
+                  {saving ? "SAVING..." : '"CONFIRM RATING"'}
+                </button>
+                <button
+                  onClick={handleCancel}
+                  disabled={saving}
+                  className="w-full py-4 bg-white text-black text-[10px] font-mono font-bold uppercase tracking-[0.2em] border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-black hover:text-white hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all cursor-pointer"
+                >
+                  CANCEL
                 </button>
               </div>
             ) : isSaved ? (
               <button
                 onClick={handleRemoveRating}
                 disabled={saving}
-                className="px-6 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 mt-2 transition-colors"
+                className="w-full py-4 bg-white text-accent-red text-[10px] font-mono font-bold uppercase tracking-[0.2em] border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-black hover:text-white hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] disabled:opacity-50 transition-all cursor-pointer"
               >
-                Remove
+                REMOVE RATING
               </button>
             ) : null}
 
-            {error && <div className="text-red-500 text-xs mt-2">{error}</div>}
+            {error && <div className="text-red-500 font-mono text-[10px] uppercase tracking-widest bg-red-100 p-2 border-[2px] border-red-500 mt-2">{error}</div>}
           </>
         ) : (
-          <p className="text-xs text-neutral-500 mt-2">
-            <button
-              onClick={() => router.push("/sign-in")}
-              className="text-blue-400 hover:underline"
-            >
-              Sign in
-            </button>{" "}
-            to save your rating.
-          </p>
+          <button
+            onClick={() => router.push("/sign-in")}
+            className="w-full py-4 bg-white text-black text-[10px] font-mono font-bold uppercase tracking-[0.2em] border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-black hover:text-white hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all cursor-pointer mt-4"
+          >
+            SIGN IN TO RATE
+          </button>
         )}
       </div>
     </div>

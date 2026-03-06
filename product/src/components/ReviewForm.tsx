@@ -13,7 +13,7 @@ interface ReviewFormProps {
 
 /**
  * Review Form Component.
- * Handles writing reviews and deleting them (leaving rating intact if it exists).
+ * Handles writing reviews and deleting them.
  */
 export default function ReviewForm({
   albumId,
@@ -56,12 +56,10 @@ export default function ReviewForm({
     loadData();
   }, [albumId]);
 
-  // Handle the "Publish" button click
   const handleSave = async () => {
     // If not logged in, redirect to the sign-in page
     if (!user) return router.push("/sign-in");
 
-    // Don't save empty reviews
     if (!review.trim()) return;
 
     setSaving(true);
@@ -96,6 +94,7 @@ export default function ReviewForm({
       }
 
       setHasExistingReview(true);
+      window.dispatchEvent(new CustomEvent("review-updated"));
       router.refresh();
     } catch (error) {
       console.error(error);
@@ -136,6 +135,7 @@ export default function ReviewForm({
 
       setReview("");
       setHasExistingReview(false);
+      window.dispatchEvent(new CustomEvent("review-updated"));
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -147,10 +147,10 @@ export default function ReviewForm({
   if (loading) return null;
 
   return (
-    <div className="bg-black-900 rounded-lg p-4 flex flex-col gap-4">
-      <div className="flex justify-between items-center">
-        <label className="text-xs text-neutral-500 font-medium uppercase tracking-wider">
-          {user ? "Your Review" : "Review this Album"}
+    <div className="border-[3px] border-black p-6 bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)] flex flex-col gap-4">
+      <div className="flex justify-between items-center border-b-[2px] border-black/10 pb-4">
+        <label className="text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em]">
+          {user ? '"YOUR REVIEW"' : '"REVIEW THIS ALBUM"'}
         </label>
       </div>
 
@@ -159,19 +159,18 @@ export default function ReviewForm({
         onChange={(e) => setReview(e.target.value)}
         disabled={!user || saving}
         placeholder={user ? "Share your thoughts..." : "Sign in to write..."}
-        className="w-full bg-black border border-neutral-800 rounded-md p-3 text-sm text-white focus:outline-none focus:border-neutral-600 transition-colors resize-none h-32 placeholder:text-neutral-700"
+        className="w-full bg-neutral-50 border-[3px] border-black p-4 text-lg font-serif text-black focus:outline-none focus:bg-white transition-colors resize-none h-32 placeholder:text-black/30 placeholder:font-mono placeholder:text-xs placeholder:uppercase tracking-widest shadow-inner shadow-black/5"
       />
 
-      {/* The Button changes based on login status */}
       {user ? (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 mt-4">
           {/* Publish/Update */}
           <button
             onClick={handleSave}
             disabled={saving || !review.trim()}
-            className="w-full py-2 bg-neutral-800 text-white text-xs font-bold rounded uppercase tracking-widest hover:bg-neutral-700 disabled:opacity-50 transition-colors"
+            className="w-full py-4 bg-black text-white text-xs font-mono font-bold uppercase tracking-[0.2em] border-[3px] border-black shadow-[4px_4px_0px_rgba(255,0,0,1)] hover:bg-accent-red hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] disabled:opacity-50 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_rgba(255,0,0,1)] disabled:hover:bg-black transition-all cursor-pointer"
           >
-            {saving ? "Saving..." : hasExistingReview ? "Update" : "Publish"}
+            {saving ? "SAVING..." : hasExistingReview ? "UPDATE REVIEW" : "PUBLISH REVIEW"}
           </button>
 
           {/* Delete Button */}
@@ -179,18 +178,18 @@ export default function ReviewForm({
             <button
               onClick={handleDeleteReview}
               disabled={saving}
-              className="w-full py-2 bg-red-600 text-white text-xs font-bold rounded uppercase tracking-widest hover:bg-red-700 disabled:opacity-50 transition-colors"
+              className="w-full py-3 bg-white text-accent-red text-xs font-mono font-bold uppercase tracking-[0.2em] border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-black hover:text-white hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] disabled:opacity-50 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_rgba(0,0,0,1)] disabled:hover:bg-white disabled:hover:text-accent-red transition-all cursor-pointer mt-2"
             >
-              Delete
+              DELETE REVIEW
             </button>
           )}
         </div>
       ) : (
         <button
           onClick={() => router.push("/sign-in")}
-          className="w-full py-2 bg-neutral-800 text-neutral-400 text-xs font-bold rounded uppercase tracking-widest hover:bg-neutral-700 transition-colors"
+          className="w-full py-4 mt-4 bg-white text-black text-xs font-mono font-bold uppercase tracking-[0.2em] border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-black hover:text-white hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all cursor-pointer"
         >
-          Sign in to Post
+          SIGN IN TO POST
         </button>
       )}
     </div>
