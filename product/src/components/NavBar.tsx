@@ -6,7 +6,6 @@ import { User } from "@supabase/supabase-js";
 import NotificationBell from "@/components/NotificationBell"; // Added the Notification Bell import
 
 /**
- * Main Navigation Component
  * Handles live search with debouncing and global authentication state.
  */
 export default function NavBar() {
@@ -46,7 +45,6 @@ export default function NavBar() {
 
   /**
    * Helper to retrieve the custom 'username' and 'avatar_url'
-   * from the public profiles table.
    */
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -69,11 +67,6 @@ export default function NavBar() {
     router.refresh();
   };
 
-  /**
-   * Search Logic with Debouncing
-   * Waits 300ms after the last keystroke before hitting the internal Search API
-   * to reduce unnecessary network load and respect Spotify rate limits.
-   */
   useEffect(() => {
     if (!query) {
       setResults([]);
@@ -104,9 +97,9 @@ export default function NavBar() {
   };
 
   return (
-    <header className="w-full flex items-center justify-between px-6 py-3 shadow-sm bg-black sticky top-0 z-50">
+    <header className="w-full flex items-center justify-between px-6 py-4 bg-white border-b-[3px] border-black sticky top-0 z-50">
       <div
-        className="text-white font-bold text-xl cursor-pointer"
+        className="text-black font-black font-serif text-3xl uppercase tracking-tighter cursor-pointer hover:text-accent-red transition-colors"
         onClick={() => router.push("/")}
       >
         dotwv
@@ -119,31 +112,36 @@ export default function NavBar() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search artist, album, single..."
-            className="bg-neutral-900 border border-neutral-800 rounded px-4 py-2 w-full text-white"
+            placeholder="SEARCH ARTIST, ALBUM, SINGLE..."
+            className="bg-white border-[3px] border-black px-4 py-2 w-full text-black font-mono text-sm uppercase tracking-widest placeholder:text-black/40 focus:outline-none focus:shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-shadow"
             onFocus={() => results.length > 0 && setShowDropdown(true)}
             onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
           />
 
           {/* Real time Search Results Dropdown */}
           {showDropdown && results.length > 0 && (
-            <ul className="absolute top-full left-0 w-full bg-white shadow-md z-50 max-h-60 overflow-y-auto">
-              {results.map((item: any) => (
+            <ul className="absolute top-full mt-2 left-0 w-full bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] z-50 max-h-80 overflow-y-auto">
+              {results.map((item: any, index: number) => (
                 <li
                   key={item.id + item.type}
-                  className="flex items-center px-4 py-2 hover:bg-gray-200 cursor-pointer space-x-3"
+                  className={`flex items-center px-4 py-3 hover:bg-black hover:text-white cursor-pointer space-x-4 border-b-[3px] border-black last:border-b-0 transition-colors group ${index % 2 === 0 ? "bg-white" : "bg-neutral-50"
+                    }`}
                   onMouseDown={() => handleSelect(item)}
                 >
-                  {item.images?.[0]?.url && (
+                  {item.images?.[0]?.url ? (
                     <img
                       src={item.images[0].url}
                       alt={item.name}
-                      className="w-8 h-8 object-cover rounded"
+                      className="w-10 h-10 object-cover border-2 border-black transition-all"
                     />
+                  ) : (
+                    <div className="w-10 h-10 border-2 border-black flex items-center justify-center bg-neutral-200">
+                      <span className="font-mono text-[10px] text-black">N/A</span>
+                    </div>
                   )}
-                  <div className="flex flex-col">
-                    <span className="font-medium">{item.name}</span>
-                    <span className="text-xs text-gray-500">{item.type}</span>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="font-bold font-mono uppercase truncate">{item.name}</span>
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-black/50 group-hover:text-white/70">{item.type}</span>
                   </div>
                 </li>
               ))}
@@ -160,7 +158,7 @@ export default function NavBar() {
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center hover:bg-neutral-700 transition-colors overflow-hidden border border-neutral-700"
+                className="w-10 h-10 bg-black flex items-center justify-center hover:bg-accent-red border-[3px] border-black transition-all shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
               >
                 {/* Show Real Avatar or Fallback Initial */}
                 {avatarUrl ? (
@@ -170,29 +168,32 @@ export default function NavBar() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-white font-bold">
-                    {username ? username[0].toUpperCase() : "?"}
+                  <span className="text-white font-mono font-bold uppercase">
+                    {username ? username[0] : "?"}
                   </span>
                 )}
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                <div className="absolute right-0 mt-4 w-56 bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] z-50">
+                  <div className="px-4 py-3 border-b-[3px] border-black cursor-default">
+                    <p className="text-[10px] uppercase font-mono text-black/50 tracking-widest">LOGGED IN AS</p>
+                    <p className="text-sm font-bold font-mono truncate uppercase">@{username || "..."}</p>
+                  </div>
                   <button
                     onClick={() => {
                       setShowUserMenu(false);
                       if (username) router.push(`/profile/${username}`);
                     }}
-                    className="w-full px-4 py-2 border-b border-gray-200 hover:bg-gray-50 text-left"
+                    className="w-full px-4 py-3 text-left font-mono text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors border-b-[3px] border-black"
                   >
-                    <p className="text-sm text-gray-500">Signed in as</p>
-                    <p className="text-sm font-medium">@{username || "..."}</p>
+                    MY PROFILE
                   </button>
                   <button
                     onClick={handleSignOut}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="w-full px-4 py-3 text-left font-mono text-xs font-bold uppercase tracking-widest text-accent-red hover:bg-accent-red hover:text-white transition-colors"
                   >
-                    Sign Out
+                    SIGN OUT
                   </button>
                 </div>
               )}
@@ -200,10 +201,10 @@ export default function NavBar() {
           </>
         ) : (
           <button
-            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
+            className="bg-white text-black font-bold px-6 py-2 text-xs uppercase tracking-[0.2em] border-[3px] border-black font-mono shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-black hover:text-white hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
             onClick={() => router.push("/sign-in")}
           >
-            Sign In
+            SIGN IN
           </button>
         )}
       </div>

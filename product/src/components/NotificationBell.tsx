@@ -51,12 +51,12 @@ export default function NotificationBell() {
       {/* THE Bell Button*/}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-white hover:text-gray-300 transition-colors"
+        className="relative p-2 text-black bg-white border-[2px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-black hover:text-white hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="22"
-          height="22"
+          width="20"
+          height="20"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -70,102 +70,104 @@ export default function NotificationBell() {
 
         {/* The Red Notification Dot */}
         {requests.length > 0 && (
-          <span className="absolute top-1.5 right-2 w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-black" />
+          <span className="absolute -top-2 -right-2 w-3 h-3 bg-accent-red border-[2px] border-black" />
         )}
       </button>
 
       {/* Dropdown Panel */}
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-[450px] bg-neutral-900 border border-neutral-800 shadow-2xl rounded-xl overflow-hidden z-50">
+        <div className="absolute right-0 mt-3 w-[400px] bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] z-50">
           {/* Header Area */}
-          <div className="px-5 py-4 border-b border-neutral-800 flex items-center bg-neutral-900/50">
+          <div className="px-5 py-4 border-b-[3px] border-black flex items-center bg-white">
             {view === "requests" && (
               <button
                 onClick={() => setView("menu")}
-                className="mr-3 text-neutral-400 hover:text-white transition-colors"
+                className="mr-3 text-black hover:text-accent-red font-bold text-lg transition-colors leading-none"
               >
                 ←
               </button>
             )}
-            <span className="text-xs font-bold uppercase tracking-wider text-neutral-300">
-              {view === "menu" ? "Notifications" : "Sync Requests"}
+            <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-black">
+              {view === "menu" ? '"NOTIFICATIONS"' : '"SYNC REQUESTS"'}
             </span>
           </div>
 
-          <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-            {/* VIEW A: THE MAIN MENU */}
+          <div className="max-h-[400px] overflow-y-auto">
+            {/* THE MAIN MENU */}
             {view === "menu" && (
-              <div className="p-3">
+              <div className="p-4">
                 <button
                   onClick={() => setView("requests")}
-                  className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-neutral-800 transition-colors text-left group"
+                  className="w-full flex items-center justify-between p-4 border-[3px] border-black hover:bg-neutral-50 transition-colors text-left group shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]"
                 >
                   <div>
-                    <p className="text-sm font-semibold text-white group-hover:text-white">
-                      Follow Requests
+                    <p className="text-sm font-bold font-mono uppercase tracking-widest text-black">
+                      FOLLOW REQUESTS
                     </p>
-                    <p className="text-xs text-neutral-500 mt-0.5">
+                    <p className="text-xs font-serif text-black/60 mt-1">
                       Approve or ignore incoming syncs
                     </p>
                   </div>
                   {requests.length > 0 && (
-                    <span className="bg-white text-black text-xs font-bold px-2.5 py-1 rounded-full">
+                    <span className="bg-accent-red text-white text-[10px] font-mono font-bold px-2 py-1 border-[2px] border-black">
                       {requests.length}
                     </span>
                   )}
                 </button>
 
-                <div className="p-5 text-center mt-2 border-t border-neutral-800/50">
-                  <p className="text-xs text-neutral-500">No new activity.</p>
+                <div className="p-4 text-center mt-4 border-t-[2px] border-black/10">
+                  <p className="text-[10px] font-mono uppercase tracking-widest font-bold text-black/40">NO NEW ACTIVITY.</p>
                 </div>
               </div>
             )}
 
-            {/* VIEW B: THE ACTUAL REQUESTS */}
+            {/* THE ACTUAL REQUESTS */}
             {view === "requests" && (
-              <div className="p-2">
+              <div className="p-4 flex flex-col gap-4">
                 {requests.length === 0 ? (
-                  <div className="py-10 text-center">
-                    <p className="text-sm text-neutral-500">
-                      No pending requests.
+                  <div className="py-10 text-center border-[3px] border-black border-dashed bg-neutral-50">
+                    <p className="text-[10px] font-mono uppercase tracking-[0.2em] font-bold text-black/40">
+                      NO PENDING REQUESTS.
                     </p>
                   </div>
                 ) : (
                   requests.map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center justify-between p-3 hover:bg-neutral-800 rounded-lg transition-colors"
+                      className="flex items-center justify-between p-4 bg-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-neutral-50 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-neutral-800 rounded-full overflow-hidden border border-neutral-700">
-                          {user.avatar_url && (
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-black border-[2px] border-black flex items-center justify-center shrink-0">
+                          {user.avatar_url ? (
                             <img
                               src={user.avatar_url}
                               alt={user.username}
                               className="w-full h-full object-cover"
                             />
+                          ) : (
+                            <span className="text-white font-serif font-bold uppercase">{user.username?.[0] || '?'}</span>
                           )}
                         </div>
                         <Link
                           href={`/profile/${user.username}`}
-                          className="text-sm font-semibold text-neutral-200 hover:text-white transition-colors"
+                          className="text-sm font-bold font-sans uppercase tracking-tight text-black hover:underline decoration-accent-red decoration-2 underline-offset-4 transition-colors"
                         >
                           {user.username}
                         </Link>
                       </div>
 
-                      <div className="flex gap-2">
-                        {/* Sync Back Button - High Contrast */}
+                      <div className="flex gap-2 shrink-0">
+                        {/* Sync Back Button */}
                         <button
                           onClick={() => handleSyncBack(user.id)}
-                          className="px-4 py-1.5 bg-white text-black text-xs font-bold rounded-md hover:bg-neutral-200 transition-colors"
+                          className="px-4 py-2 bg-black text-white text-[10px] font-mono font-bold uppercase tracking-widest border-[2px] border-black hover:bg-accent-red transition-colors"
                         >
-                          Sync
+                          SYNC
                         </button>
-                        {/* Decline Button - Subtle until hover */}
+                        {/* Decline Button */}
                         <button
                           onClick={() => handleDecline(user.id)}
-                          className="px-3 py-1.5 border border-neutral-700 text-neutral-400 text-xs font-bold rounded-md hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 transition-all"
+                          className="px-3 py-2 bg-white text-black border-[2px] border-black text-[10px] font-mono font-bold hover:bg-black hover:text-white transition-all"
                         >
                           ✕
                         </button>

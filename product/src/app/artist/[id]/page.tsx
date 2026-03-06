@@ -35,15 +35,13 @@ export default async function ArtistPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  // Get Current User (to determine if they follow this artist)
+  // determine if current user still follows this artist
   const {
     data: { user: currentUser },
   } = await supabase.auth.getUser();
 
   /**
-   * Parallel Execution:
    * Uses allSettled to fetch Spotify Data AND Supabase Data simultaneously.
-   * This prevents sequential "waterfalling" of requests, reducing total load time.
    */
   const [artistRes, albumsRes, globalCountRes, userStatusRes] =
     await Promise.allSettled([
@@ -64,11 +62,11 @@ export default async function ArtistPage({
       // Checks if the current authenticated user has this artist in their rotation.
       currentUser
         ? supabase
-            .from("artist_follows")
-            .select("id")
-            .eq("user_id", currentUser.id)
-            .eq("spotify_artist_id", id)
-            .single()
+          .from("artist_follows")
+          .select("id")
+          .eq("user_id", currentUser.id)
+          .eq("spotify_artist_id", id)
+          .single()
         : Promise.resolve({ data: null }),
     ]);
 
@@ -88,18 +86,14 @@ export default async function ArtistPage({
     userStatusRes.status === "fulfilled" && !!userStatusRes.value.data;
 
   /**
-   * Deduplication Logic:
-   * Removes duplicate release names (e.g., Deluxe vs Standard versions)
-   * to ensure a cleaner visual presentation of the discography.
+   * Removes duplicate release names
    */
   const uniqueAlbums = Array.from(
     new Map(rawAlbums.map((a: any) => [a.name, a])).values(),
   );
 
   /**
-   * Data Categorisation:
    * Filters the flat Spotify list into semantic groups based on track count and type.
-   * This allows the UI to distinguish between full Albums, EPs, and Singles.
    */
   const discography = {
     albums: uniqueAlbums.filter((a: any) => a.album_type === "album"),
@@ -117,46 +111,45 @@ export default async function ArtistPage({
   const artistImage = artist.images?.[0]?.url;
 
   return (
-    <div className="bg-black text-white min-h-screen pb-24">
-      {/* Decorative Header: Creates a repeated film-strip effect using the artist's profile image */}
+    <div className="bg-white text-black min-h-screen pb-24 font-sans">
+      {/*Creates a repeated film-strip effect using the artist's profile image */}
       <div
-        className="relative w-full overflow-hidden"
+        className="relative w-full overflow-hidden border-b-[3px] border-black bg-black"
         style={{ height: "40vh", minHeight: "400px" }}
       >
         {artistImage && (
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 opacity-80"
             style={{
               backgroundImage: `url(${artistImage})`,
               backgroundSize: "auto 100%",
               backgroundRepeat: "repeat-x",
               backgroundPosition: "center",
-              filter: "grayscale(100%)", // Matches the dark, minimalist aesthetic
-              opacity: 1,
+              filter: "grayscale(100%) contrast(150%)",
             }}
           />
         )}
       </div>
 
-      <div className="flex flex-col items-center text-center px-4 mt-12">
-        <h1 className="text-5xl md:text-7xl font-medium text-white leading-tight">
+      <div className="flex flex-col items-center text-center px-4 mt-12 max-w-6xl mx-auto">
+        <h1 className="text-7xl md:text-9xl font-serif font-black uppercase tracking-tighter text-black leading-none bg-white px-8 py-4 border-[3px] border-black shadow-[16px_16px_0px_rgba(0,0,0,1)] -mt-32 relative z-10">
           {artist.name}
         </h1>
 
-        {/* Genre Tags: Maps and displays the first four genre identifiers */}
-        <div className="mt-10 flex flex-wrap justify-center gap-2">
+        {/* Maps and displays the first four genre identifiers */}
+        <div className="mt-8 flex flex-wrap justify-center gap-4">
           {artist.genres?.slice(0, 4).map((genre: string) => (
             <span
               key={genre}
-              className="uppercase tracking-widest text-xs font-bold text-neutral-400 border border-neutral-800 bg-black/50 backdrop-blur-md px-4 py-2 rounded-full"
+              className="uppercase tracking-[0.2em] text-[10px] font-mono font-bold text-black border-[3px] border-black bg-white px-4 py-2 shadow-[4px_4px_0px_rgba(0,0,0,1)]"
             >
               {genre}
             </span>
           ))}
         </div>
 
-        {/* Rotation Actions: Allows users to add artist to their taste profile */}
-        <div className="mt-10 flex flex-col items-center gap-4">
+        {/* Allows users to add artist to their taste profile */}
+        <div className="mt-12 flex flex-col items-center gap-6">
           {currentUser ? (
             <RotationButton
               spotifyArtistId={id}
@@ -167,21 +160,21 @@ export default async function ArtistPage({
           ) : (
             <Link
               href="/sign-in"
-              className="px-8 py-3 bg-white text-black font-bold uppercase tracking-widest text-xs hover:bg-neutral-200 transition-colors"
+              className="px-8 py-4 bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] text-black font-mono font-bold uppercase tracking-[0.2em] text-xs hover:bg-black hover:text-white hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none transition-all"
             >
               Sign In to Add
             </Link>
           )}
 
-          {/* Social Proof: Displays the total number of users following this artist */}
-          <div className="text-neutral-500 text-xs font-mono uppercase tracking-widest">
-            <strong className="text-white">{globalRotationCount}</strong>{" "}
-            {globalRotationCount === 1 ? "Listener" : "Listeners"} in Rotation
+          {/* Displays the total number of users following this artist */}
+          <div className="text-black/60 text-[10px] font-mono uppercase tracking-[0.2em] font-bold mt-2 bg-neutral-100 px-4 py-2 border-[2px] border-black/10">
+            <strong className="text-black">{globalRotationCount}</strong>{" "}
+            {globalRotationCount === 1 ? "LISTENER" : "LISTENERS"} IN ROTATION
           </div>
         </div>
       </div>
 
-      {/* Main Discography Sections: Rendered using the categorised data objects */}
+      {/* Main Discography Section */}
       <div className="max-w-7xl mx-auto px-6 mt-12">
         <DiscographySection title="Albums" items={discography.albums} />
         <div className="mt-16">
