@@ -3,9 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 
-/**
- * ScHoolboy Q Easter Egg [all words start with capital letter, h becomes H].
- */
 function scHoolboyTransform(text: string): string {
   return text
     .split("")
@@ -17,6 +14,10 @@ function scHoolboyTransform(text: string): string {
     .join("");
 }
 
+function doomTransform(text: string): string {
+  return text.toLowerCase();
+}
+
 /**
  * DiscographySection Component
  * Renders a categorised grid of albums (e.g., Albums, EPs, or Singles).
@@ -25,14 +26,19 @@ function scHoolboyTransform(text: string): string {
 export default function DiscographySection({
   title,
   items,
-  isQ = false,
+  easterEgg,
 }: {
   title: string;
   items: any[];
-  isQ?: boolean;
+  easterEgg?: "q" | "doom";
 }) {
   const [showAll, setShowAll] = useState(false);
-  const formatText = (text: string) => isQ ? scHoolboyTransform(text) : text;
+  const noUppercase = !!easterEgg;
+  const format = (text: string) => {
+    if (easterEgg === "q") return scHoolboyTransform(text);
+    if (easterEgg === "doom") return doomTransform(text);
+    return text;
+  };
 
   if (!items || items.length === 0) return null;
 
@@ -41,7 +47,7 @@ export default function DiscographySection({
   return (
     <div className="mb-16">
       <div className="flex justify-between items-center mb-6 pb-2 border-b-[2px] border-black/10">
-        <h2 className={`text-sm text-black font-mono font-bold tracking-[0.2em] flex items-center gap-2 ${isQ ? "" : "uppercase"}`}>
+        <h2 className={`text-sm text-black font-mono font-bold tracking-[0.2em] flex items-center gap-2 ${noUppercase ? "" : "uppercase"}`}>
           <span className="w-2 h-2 bg-accent-red flex-shrink-0"></span>
           "{title}"
         </h2>
@@ -49,9 +55,9 @@ export default function DiscographySection({
         {items.length > 5 && (
           <button
             onClick={() => setShowAll(!showAll)}
-            className={`text-[10px] font-mono font-bold tracking-[0.2em] px-4 py-2 border-[2px] border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:bg-black hover:text-white hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all cursor-pointer ${isQ ? "" : "uppercase"}`}
+            className={`text-[10px] font-mono font-bold tracking-[0.2em] px-4 py-2 border-[2px] border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:bg-black hover:text-white hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all cursor-pointer ${noUppercase ? "" : "uppercase"}`}
           >
-            {showAll ? formatText("Show Less -") : formatText("Show All +")}
+            {showAll ? format("Show Less -") : format("Show All +")}
           </button>
         )}
       </div>
@@ -76,11 +82,11 @@ export default function DiscographySection({
             </div>
 
             <div className="p-4 flex flex-col flex-grow">
-              <p className={`text-xl font-bold font-sans tracking-tight text-black leading-tight group-hover:underline decoration-accent-red decoration-2 underline-offset-4 line-clamp-2 ${isQ ? "" : "uppercase"}`}>
-                {isQ ? formatText(album.name) : album.name}
+              <p className={`text-xl font-bold font-sans tracking-tight text-black leading-tight group-hover:underline decoration-accent-red decoration-2 underline-offset-4 line-clamp-2 ${noUppercase ? "" : "uppercase"}`}>
+                {noUppercase ? format(album.name) : album.name}
               </p>
               <div className="flex-grow"></div>
-              <p className={`text-[10px] font-mono text-black/50 font-bold tracking-[0.2em] mt-3 pt-3 border-t-[2px] border-black/10 ${isQ ? "" : "uppercase"}`}>
+              <p className={`text-[10px] font-mono text-black/50 font-bold tracking-[0.2em] mt-3 pt-3 border-t-[2px] border-black/10 ${noUppercase ? "" : "uppercase"}`}>
                 {album.release_date.substring(0, 4)}
               </p>
             </div>
