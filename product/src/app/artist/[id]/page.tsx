@@ -5,17 +5,26 @@ import DiscographySection from "@/components/DiscographySection";
 import { createClient } from "@/lib/supabase/server";
 import RotationButton from "@/components/RotationButton";
 
+const SCHOOLBOY_Q_ID = "5IcR3N7QB1j6KBL8eImZ8m";
 /**
- * Helper function to fetch the main artist profile metadata.
+ * ScHoolboy Q Easter Egg: capitalises tHe first letter and every "H" in a string.
+ * All otHer letters are lowercase. Mirrors Q's signature typing style.
  */
+function scHoolboyTransform(text: string): string {
+  return text
+    .split("")
+    .map((char, i) => {
+      if (i === 0) return char.toUpperCase();
+      if (char.toLowerCase() === "h") return "H";
+      return char.toLowerCase();
+    })
+    .join("");
+}
+
 async function fetchArtist(id: string) {
   return await fetchSpotifyData(`https://api.spotify.com/v1/artists/${id}`);
 }
 
-/**
- * Helper to fetch the artist's full discography.
- * Requests albums, singles, and compilations in a single batch to optimise performance.
- */
 async function fetchAlbums(id: string) {
   return await fetchSpotifyData(
     `https://api.spotify.com/v1/artists/${id}/albums?include_groups=album,single,compilation&limit=50`,
@@ -45,21 +54,12 @@ export default async function ArtistPage({
    */
   const [artistRes, albumsRes, globalCountRes, userStatusRes] =
     await Promise.allSettled([
-      // Artist Metadata
       fetchArtist(id),
-
-      // Discography
       fetchAlbums(id),
-
-      // Global Rotation Count
-      // Leverages the DB index to instantly count how many users follow this artist.
       supabase
         .from("artist_follows")
         .select("*", { count: "exact", head: true })
         .eq("spotify_artist_id", id),
-
-      // User's Status
-      // Checks if the current authenticated user has this artist in their rotation.
       currentUser
         ? supabase
           .from("artist_follows")
@@ -70,31 +70,22 @@ export default async function ArtistPage({
         : Promise.resolve({ data: null }),
     ]);
 
-  // Validate the artist profile; if the core data fetch fails, trigger a 404 error.
   const artist = artistRes.status === "fulfilled" ? artistRes.value : null;
   if (!artist || artist.error) return notFound();
 
-  // Initialise albums array, defaulting to an empty list if the fetch was unsuccessful.
   const rawAlbums =
     albumsRes.status === "fulfilled" ? albumsRes.value?.items : [];
 
-  // Extract the count and status, defaulting to 0/false if fetch failed.
   const globalRotationCount =
     globalCountRes.status === "fulfilled" ? globalCountRes.value.count || 0 : 0;
 
   const isInRotation =
     userStatusRes.status === "fulfilled" && !!userStatusRes.value.data;
 
-  /**
-   * Removes duplicate release names
-   */
   const uniqueAlbums = Array.from(
     new Map(rawAlbums.map((a: any) => [a.name, a])).values(),
   );
 
-  /**
-   * Filters the flat Spotify list into semantic groups based on track count and type.
-   */
   const discography = {
     albums: uniqueAlbums.filter((a: any) => a.album_type === "album"),
     eps: uniqueAlbums.filter(
@@ -110,9 +101,12 @@ export default async function ArtistPage({
 
   const artistImage = artist.images?.[0]?.url;
 
+  // Easter egg
+  const isQ = id === SCHOOLBOY_Q_ID;
+  const formatText = (text: string) => isQ ? scHoolboyTransform(text) : text;
+
   return (
     <div className="bg-white text-black min-h-screen pb-24 font-sans">
-      {/*Creates a repeated film-strip effect using the artist's profile image */}
       <div
         className="relative w-full overflow-hidden border-b-[3px] border-black bg-black"
         style={{ height: "40vh", minHeight: "400px" }}
@@ -132,23 +126,21 @@ export default async function ArtistPage({
       </div>
 
       <div className="flex flex-col items-center text-center px-4 mt-12 max-w-6xl mx-auto">
-        <h1 className="text-7xl md:text-9xl font-serif font-black uppercase tracking-tighter text-black leading-none bg-white px-8 py-4 border-[3px] border-black shadow-[16px_16px_0px_rgba(0,0,0,1)] -mt-32 relative z-10">
-          {artist.name}
+        <h1 className={`text-7xl md:text-9xl font-serif font-black tracking-tighter text-black leading-none bg-white px-8 py-4 border-[3px] border-black shadow-[16px_16px_0px_rgba(0,0,0,1)] -mt-32 relative z-10 ${isQ ? "" : "uppercase"}`}>
+          {isQ ? artist.name : artist.name}
         </h1>
 
-        {/* Maps and displays the first four genre identifiers */}
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           {artist.genres?.slice(0, 4).map((genre: string) => (
             <span
               key={genre}
-              className="uppercase tracking-[0.2em] text-[10px] font-mono font-bold text-black border-[3px] border-black bg-white px-4 py-2 shadow-[4px_4px_0px_rgba(0,0,0,1)]"
+              className={`tracking-[0.2em] text-[10px] font-mono font-bold text-black border-[3px] border-black bg-white px-4 py-2 shadow-[4px_4px_0px_rgba(0,0,0,1)] ${isQ ? "" : "uppercase"}`}
             >
-              {genre}
+              {formatText(genre)}
             </span>
           ))}
         </div>
 
-        {/* Allows users to add artist to their taste profile */}
         <div className="mt-12 flex flex-col items-center gap-6">
           {currentUser ? (
             <RotationButton
@@ -160,33 +152,32 @@ export default async function ArtistPage({
           ) : (
             <Link
               href="/sign-in"
-              className="px-8 py-4 bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] text-black font-mono font-bold uppercase tracking-[0.2em] text-xs hover:bg-black hover:text-white hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none transition-all"
+              className={`px-8 py-4 bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] text-black font-mono font-bold tracking-[0.2em] text-xs hover:bg-black hover:text-white hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none transition-all ${isQ ? "" : "uppercase"}`}
             >
-              Sign In to Add
+              {formatText("Sign In to Add")}
             </Link>
           )}
 
-          {/* Displays the total number of users following this artist */}
-          <div className="text-black/60 text-[10px] font-mono uppercase tracking-[0.2em] font-bold mt-2 bg-neutral-100 px-4 py-2 border-[2px] border-black/10">
+          <div className={`text-black/60 text-[10px] font-mono tracking-[0.2em] font-bold mt-2 bg-neutral-100 px-4 py-2 border-[2px] border-black/10 ${isQ ? "" : "uppercase"}`}>
             <strong className="text-black">{globalRotationCount}</strong>{" "}
-            {globalRotationCount === 1 ? "LISTENER" : "LISTENERS"} IN ROTATION
+            {formatText(globalRotationCount === 1 ? "Listener in Rotation" : "Listeners in Rotation")}
           </div>
         </div>
       </div>
 
-      {/* Main Discography Section */}
       <div className="max-w-7xl mx-auto px-6 mt-12">
-        <DiscographySection title="Albums" items={discography.albums} />
+        <DiscographySection title={formatText("Albums")} items={discography.albums} isQ={isQ} />
         <div className="mt-16">
-          <DiscographySection title="EPs" items={discography.eps} />
+          <DiscographySection title={formatText("EPs")} items={discography.eps} isQ={isQ} />
         </div>
         <div className="mt-16">
-          <DiscographySection title="Singles" items={discography.singles} />
+          <DiscographySection title={formatText("Singles")} items={discography.singles} isQ={isQ} />
         </div>
         <div className="mt-16">
           <DiscographySection
-            title="Compilations"
+            title={formatText("Compilations")}
             items={discography.compilations}
+            isQ={isQ}
           />
         </div>
       </div>
