@@ -5,23 +5,15 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
-/**
- * SignInPage (Server Component)
- * Handles the authentication flow using Supabase Auth (Email/Password).
- */
 export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const supabase = createClient();
-  const [showPassword, setShowPassword] = useState(false);
 
-  /**
-   * Handles the sign-in submission.
-   * Uses simple email/password authentication without custom database lookups.
-   */
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -32,14 +24,10 @@ export default function SignInPage() {
         email,
         password,
       });
-
       if (signInError) throw signInError;
-
-      // Force router refresh to update server components with new auth state
       router.push("/");
       router.refresh();
     } catch (err: any) {
-      // We purposefully use a generic error message for security
       setError("Invalid email or password.");
     } finally {
       setLoading(false);
@@ -47,25 +35,33 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black px-4 text-white font-sans">
-      <div className="max-w-md w-full space-y-8 bg-neutral-900 border border-neutral-800 p-8 rounded-xl">
-        <div>
-          <h2 className="text-3xl font-bold text-center">Sign In</h2>
-          <p className="text-center text-neutral-400 text-sm mt-2">
-            Welcome back
-          </p>
+    <div className="min-h-screen flex items-center justify-center bg-white px-4 font-sans">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="mb-10 text-center">
+          <Link href="/" className="text-black font-black font-serif text-4xl uppercase tracking-tighter hover:text-accent-red transition-colors">
+            dotwv
+          </Link>
         </div>
 
-        <form onSubmit={handleSignIn} className="mt-8 space-y-6">
-          {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-sm text-center rounded-lg">
-              {error}
-            </div>
-          )}
+        {/* Form Card */}
+        <div className="bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] p-8">
+          <h2 className="text-2xl font-black font-mono uppercase tracking-[0.1em] text-black mb-1">
+            Sign In
+          </h2>
+          <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-black/50 mb-8">
+            Welcome back
+          </p>
 
-          <div className="space-y-4">
+          <form onSubmit={handleSignIn} className="space-y-5">
+            {error && (
+              <div className="p-3 bg-accent-red/10 border-[2px] border-accent-red text-accent-red text-xs font-mono font-bold uppercase tracking-wider text-center">
+                {error}
+              </div>
+            )}
+
             <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-1">
+              <label className="block text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-black/60 mb-2">
                 Email
               </label>
               <input
@@ -73,93 +69,55 @@ export default function SignInPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full px-4 py-3 bg-black border border-neutral-800 rounded-lg text-white focus:border-white focus:ring-1 focus:ring-white outline-none transition-all"
-                placeholder="name@example.com"
+                className="w-full px-4 py-3 bg-white border-[3px] border-black text-black font-mono text-sm focus:outline-none focus:shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-shadow placeholder:text-black/30"
+                placeholder="NAME@EXAMPLE.COM"
               />
             </div>
 
-            {/* Password with Toggle */}
             <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-1">
+              <label className="block text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-black/60 mb-2">
                 Password
               </label>
               <div className="relative">
                 <input
-                  type={showPassword ? "text" : "password"} // Toggles between text and password
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full px-4 py-3 bg-black border border-neutral-800 rounded-lg text-white focus:border-white focus:ring-1 focus:ring-white outline-none transition-all pr-10" // Added pr-10 for space
+                  className="w-full px-4 py-3 bg-white border-[3px] border-black text-black font-mono text-sm focus:outline-none focus:shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-shadow pr-12 placeholder:text-black/30"
                   placeholder="••••••••"
                   minLength={6}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold uppercase tracking-wider text-black/40 hover:text-black transition-colors"
                 >
-                  {showPassword ? (
-                    // Eye Off Icon
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="w-5 h-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"
-                      />
-                    </svg>
-                  ) : (
-                    // Eye Icon
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="w-5 h-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                      />
-                    </svg>
-                  )}
+                  {showPassword ? "HIDE" : "SHOW"}
                 </button>
               </div>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-sm font-bold text-black bg-white hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-
-        <div className="text-center text-sm pt-4 border-t border-neutral-800">
-          <p className="text-neutral-400">
-            Don't have an account?{" "}
-            <Link
-              href="/sign-up"
-              className="font-bold text-white hover:underline"
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 bg-black text-white font-mono font-bold uppercase tracking-[0.2em] text-sm border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-accent-red hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
-              Sign Up
-            </Link>
-          </p>
+              {loading ? "Signing in..." : "Sign In →"}
+            </button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t-[2px] border-black/10 text-center">
+            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-black/50">
+              Don't have an account?{" "}
+              <Link
+                href="/sign-up"
+                className="font-bold text-black hover:text-accent-red transition-colors underline underline-offset-4 decoration-2"
+              >
+                Sign Up
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
