@@ -3,7 +3,15 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
-import NotificationBell from "@/components/NotificationBell"; // Added the Notification Bell import
+import NotificationBell from "@/components/NotificationBell";
+
+interface SearchResults {
+  users: { id: string; name: string; image: string | null; type: "user" }[];
+  artists: { id: string; name: string; image: string | null; type: "artist" }[];
+  albums: { id: string; name: string; image: string | null; subtitle: string; type: "album" }[];
+}
+
+const emptyResults: SearchResults = { users: [], artists: [], albums: [] };
 
 /**
  * Handles live search with debouncing and global authentication state.
@@ -11,7 +19,7 @@ import NotificationBell from "@/components/NotificationBell"; // Added the Notif
 export default function NavBar() {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<SearchResults>(emptyResults);
   const [showDropdown, setShowDropdown] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState<string | null>(null);
@@ -19,10 +27,6 @@ export default function NavBar() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const supabase = createClient();
 
-  /**
-   * Listens for authentication changes.
-   * Syncs the user session and fetches the associated username and avatar.
-   */
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -43,9 +47,6 @@ export default function NavBar() {
     return () => subscription.unsubscribe();
   }, []);
 
-  /**
-   * Helper to retrieve the custom 'username' and 'avatar_url'
-   */
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
@@ -69,7 +70,7 @@ export default function NavBar() {
 
   useEffect(() => {
     if (!query) {
-      setResults([]);
+      setResults(emptyResults);
       setShowDropdown(false);
       return;
     }
@@ -88,13 +89,49 @@ export default function NavBar() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Handles navigation when a search result is clicked
   const handleSelect = (item: any) => {
     setShowDropdown(false);
     setQuery("");
-    if (item.type === "artist") router.push(`/artist/${item.id}`);
+    if (item.type === "user") router.push(`/profile/${item.id}`);
+    else if (item.type === "artist") router.push(`/artist/${item.id}`);
     else router.push(`/album/${item.id}`);
   };
+
+  const hasResults = results.users.length > 0 || results.artists.length > 0 || results.albums.length > 0;
+
+  const renderItem = (item: any, subtitle?: string) => (
+    <li
+      key={`${item.type}-${item.id}`}
+      className="flex items-center px-4 py-3 hover:bg-black hover:text-white cursor-pointer gap-4 border-b-[2px] border-black/10 last:border-b-0 transition-colors group"
+      onMouseDown={() => handleSelect(item)}
+    >
+      {item.image ? (
+        <img
+          src={item.image}
+          alt={item.name}
+          className={`w-10 h-10 object-cover border-2 border-black ${item.type === "user" ? "rounded-full" : ""}`}
+        />
+      ) : (
+        <div className={`w-10 h-10 border-2 border-black flex items-center justify-center bg-neutral-200 ${item.type === "user" ? "rounded-full" : ""}`}>
+          <span className="font-mono text-sm font-bold text-black uppercase">
+            {item.name?.[0] || "?"}
+          </span>
+        </div>
+      )}
+      <div className="flex flex-col flex-1 min-w-0">
+        <span className="font-bold font-mono uppercase truncate text-sm">{item.name}</span>
+        {subtitle && (
+          <span className="text-[10px] uppercase font-mono tracking-widest text-black/50 group-hover:text-white/70 truncate">{subtitle}</span>
+        )}
+      </div>
+    </li>
+  );
+
+  const renderSectionHeader = (label: string) => (
+    <div className="px-4 py-2 bg-neutral-100 border-b-[3px] border-black">
+      <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-black/60">"{label}"</span>
+    </div>
+  );
 
   return (
     <header className="w-full flex items-center justify-between px-6 py-4 bg-white border-b-[3px] border-black sticky top-0 z-50">
@@ -105,53 +142,53 @@ export default function NavBar() {
         dotwv
       </div>
 
-      {/* Global Search Interface */}
       <div className="flex-1 max-w-lg mx-4">
         <div className="relative w-full">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="SEARCH ARTIST, ALBUM, SINGLE..."
+            placeholder="SEARCH USERS, ARTISTS, ALBUMS..."
             className="bg-white border-[3px] border-black px-4 py-2 w-full text-black font-mono text-sm uppercase tracking-widest placeholder:text-black/40 focus:outline-none focus:shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-shadow"
-            onFocus={() => results.length > 0 && setShowDropdown(true)}
-            onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+            onFocus={() => hasResults && setShowDropdown(true)}
+            onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
           />
 
-          {/* Real time Search Results Dropdown */}
-          {showDropdown && results.length > 0 && (
-            <ul className="absolute top-full mt-2 left-0 w-full bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] z-50 max-h-80 overflow-y-auto">
-              {results.map((item: any, index: number) => (
-                <li
-                  key={item.id + item.type}
-                  className={`flex items-center px-4 py-3 hover:bg-black hover:text-white cursor-pointer space-x-4 border-b-[3px] border-black last:border-b-0 transition-colors group ${index % 2 === 0 ? "bg-white" : "bg-neutral-50"
-                    }`}
-                  onMouseDown={() => handleSelect(item)}
-                >
-                  {item.images?.[0]?.url ? (
-                    <img
-                      src={item.images[0].url}
-                      alt={item.name}
-                      className="w-10 h-10 object-cover border-2 border-black transition-all"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 border-2 border-black flex items-center justify-center bg-neutral-200">
-                      <span className="font-mono text-[10px] text-black">N/A</span>
-                    </div>
-                  )}
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span className="font-bold font-mono uppercase truncate">{item.name}</span>
-                    <span className="text-[10px] uppercase font-mono tracking-widest text-black/50 group-hover:text-white/70">{item.type}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
+          {showDropdown && hasResults && (
+            <div className="absolute top-full mt-2 left-0 w-full bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] z-50 max-h-[420px] overflow-y-auto">
+
+              {results.users.length > 0 && (
+                <>
+                  {renderSectionHeader("Users")}
+                  <ul>{results.users.map((u) => renderItem(u, `@${u.name}`))}</ul>
+                </>
+              )}
+
+              {results.artists.length > 0 && (
+                <>
+                  {renderSectionHeader("Artists")}
+                  <ul>{results.artists.map((a) => renderItem(a))}</ul>
+                </>
+              )}
+
+              {results.albums.length > 0 && (
+                <>
+                  {renderSectionHeader("Albums")}
+                  <ul>{results.albums.map((a) => renderItem(a, a.subtitle))}</ul>
+                </>
+              )}
+            </div>
+          )}
+
+          {showDropdown && query && !hasResults && (
+            <div className="absolute top-full mt-2 left-0 w-full bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] z-50 p-6 text-center">
+              <p className="text-black font-mono font-bold uppercase tracking-widest text-sm">"NO MATCHES"</p>
+            </div>
           )}
         </div>
       </div>
 
       <div className="flex items-center gap-4 relative">
-        {" "}
         {user ? (
           <>
             <NotificationBell />
@@ -160,7 +197,6 @@ export default function NavBar() {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="w-10 h-10 bg-black flex items-center justify-center hover:bg-accent-red border-[3px] border-black transition-all shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
               >
-                {/* Show Real Avatar or Fallback Initial */}
                 {avatarUrl ? (
                   <img
                     src={avatarUrl}

@@ -1,84 +1,70 @@
 import { getSpotifyToken } from "@/lib/spotify";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * GET Route Handler for Global Search.
- * This API endpoint handles multi-type searches (Artists, Albums, Singles)
- * by proxying requests to the Spotify Web API.
+ * Searches across Supabase users AND the Spotify Web API (artists + albums) in one search
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const query = url.searchParams.get("q");
 
-  // Basic validation to ensure the search parameter is present.
-  if (!query) {
-    return new Response("Missing query", { status: 400 });
+  if (!query || !query.trim()) {
+    return Response.json([]);
   }
 
   try {
-    const token = await getSpotifyToken();
+    const supabase = await createClient();
 
-    /**
-     * Parallel Data Fetching:
-     * Executes three separate Spotify API requests simultaneously.
-     * This optimises response times compared to sequential fetching.
-     */
-    const [artistRes, albumRes, singleRes] = await Promise.all([
-      fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-          query
-        )}&type=artist&limit=5`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      ),
-      fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-          query
-        )}&type=album&limit=5`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      ),
-      fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-          query
-        )}&type=album&limit=5`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      ),
+    // Run Supabase user search and Spotify search in parallel
+    const [userResults, spotifyResults] = await Promise.all([
+      // Search Supabase profiles by username.
+      supabase
+        .from("profiles")
+        .select("id, username, avatar_url")
+        .ilike("username", `%${query}%`)
+        .limit(3),
+
+      // Single Spotify API call searching for both artists and albums
+      (async () => {
+        const token = await getSpotifyToken();
+        const res = await fetch(
+          `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist,album&limit=3`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!res.ok) return { artists: [], albums: [] };
+        return res.json();
+      })(),
     ]);
 
-    // Efficiently parse all JSON responses in parallel.
-    const [artistData, albumData, singleData] = await Promise.all([
-      artistRes.json(),
-      albumRes.json(),
-      singleRes.json(),
-    ]);
+    // Normalise users from Supabase
+    const users = (userResults.data || []).map((u: any) => ({
+      id: u.username,
+      name: u.username,
+      image: u.avatar_url,
+      type: "user",
+    }));
 
-    /**
-     * Data Normalisation:
-     * Spotify returns singles within the 'albums' category.
-     * We filter these manually to provide a distinct category for the UI.
-     */
-    const singles = (singleData.albums?.items || []).filter(
-      (a: any) => a.album_type === "single"
-    );
+    // Normalise artists from Spotify
+    const artists = (spotifyResults.artists?.items || []).map((a: any) => ({
+      id: a.id,
+      name: a.name,
+      image: a.images?.[0]?.url || null,
+      type: "artist",
+    }));
 
-    const artists = artistData.artists?.items || [];
-    const albums = albumData.albums?.items || [];
+    // Normalise albums from Spotify
+    const albums = (spotifyResults.albums?.items || []).map((a: any) => ({
+      id: a.id,
+      name: a.name,
+      image: a.images?.[0]?.url || null,
+      subtitle: a.artists?.map((ar: any) => ar.name).join(", ") || "",
+      type: "album",
+    }));
 
-    /**
-     * Results Aggregation:
-     * Combines all categories into a single flat array.
-     * Each object is tagged with a 'type' property to assist the frontend renderer.
-     */
-    const results = [
-      ...artists.map((a: any) => ({ ...a, type: "artist" })),
-      ...albums.map((a: any) => ({ ...a, type: "album" })),
-      ...singles.map((a: any) => ({ ...a, type: "single" })),
-    ];
-
-    return new Response(JSON.stringify(results), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ users, artists, albums });
   } catch (err) {
-    console.error("search failed", err);
-    return new Response("Spotify search failed", { status: 500 });
+    console.error("Search failed:", err);
+    return Response.json({ users: [], artists: [], albums: [] });
   }
 }
