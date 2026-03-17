@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import HomeFeedClient from "@/components/home/HomeFeedClient";
-import HottestAlbums, { getHottestAlbums } from "@/components/home/HottestAlbums";
+import HottestAlbums from "@/components/home/HottestAlbums";
 import SuggestedSyncs from "@/components/home/SuggestedSyncs";
 import LogAlbumButton from "@/components/home/LogAlbumButton";
 export const dynamic = "force-dynamic";
@@ -36,8 +36,30 @@ export default async function Home() {
     username = profile?.username;
   }
 
-  const hottestAlbumsList = await getHottestAlbums();
-  const topAlbum = hottestAlbumsList.length > 0 ? hottestAlbumsList[0] : null;
+  // Get the #1 hottest album for the hero section with new fall back system.
+  let topAlbum: any = null;
+  const tryRanges = [24, 24 * 7, 24 * 30, 24 * 365, null];
+  for (const hours of tryRanges) {
+    let q = supabase
+      .from("reviews")
+      .select("album_id, album_name, artist_name, album_image_url, rating");
+    if (hours !== null) {
+      const since = new Date();
+      since.setHours(since.getHours() - hours);
+      q = q.gte("created_at", since.toISOString());
+    }
+    const { data } = await q;
+    if (data && data.length > 0) {
+      const agg: Record<string, any> = {};
+      data.forEach((r: any) => {
+        if (!agg[r.album_id]) agg[r.album_id] = { album_id: r.album_id, name: r.album_name, artist: r.artist_name, image: r.album_image_url, logCount: 0, totalRating: 0, ratingCount: 0 };
+        agg[r.album_id].logCount++;
+        if (r.rating !== null) { agg[r.album_id].totalRating += r.rating; agg[r.album_id].ratingCount++; }
+      });
+      topAlbum = Object.values(agg).sort((a: any, b: any) => b.logCount - a.logCount)[0];
+      break;
+    }
+  }
 
   return (
     <div className="bg-background text-foreground min-h-screen font-sans selection:bg-accent-red selection:text-white">

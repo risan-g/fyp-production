@@ -162,6 +162,7 @@ export default async function ArtistPage({
               artistName={artist.name}
               artistImageUrl={artistImage}
               initialIsInRotation={isInRotation}
+              easterEgg={isQ ? "q" : isDoom ? "doom" : undefined}
             />
           ) : (
             <Link

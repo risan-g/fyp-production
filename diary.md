@@ -8,6 +8,11 @@
 
 _TERM 2_
 
+### [2026-03-15] 
+
+- Fixed the ScHoolboy Q and MF DOOM easter eggs so the "Add to Rotation" / "In Rotation" button text also follows the artist's casing style.
+- Added a timeframe selector to the Hottest Albums sidebar (24H / WEEK / MONTH / YEAR / ALL). On first load it auto-falls back to the nearest range with data, and users can manually pick any range.
+
 ### [2026-03-12] 
 
 - Integrated the ability to search for users, artists, and albums in the nav bar. Previously, only artists and albums.
