@@ -8,6 +8,83 @@
 
 _TERM 2_
 
+### [2026-03-12] 
+
+- Integrated the ability to search for users, artists, and albums in the nav bar. Previously, only artists and albums.
+- Previously used direct profile link to access profile.
+- Added an easter egg for ScHoolboy Q's artist page. (The first letter and the letter h are in captial, the rest are in lowercase).
+- Added an easter egg for MF DOOM's artist page. (Entire page is in lowercase apart from MF DOOMS's name).
+- Redesigned the sign up and sign in pages to meet the new aesthetic.
+
+### [2026-03-08] 
+
+- Made spotify account premium to carry on with the project smoothly.
+
+### [2026-03-06] 
+
+- Add the new redesign aesthitic to rating review sections.
+- Add the new redesign aesthitic to user profile sections.
+- Add the new redesign aesthitic to global nav bar and rest of pages.
+
+### [2026-03-05] 
+
+- Started redesign pocess with the homepage.
+- Restructured the homepage to have a hero section, live feed (global and synced), hottest albums, and sync suggestions.
+- Hottest albums is a rsanking of the most logged albums in the last 24 hours. (Currently the last 24hours).
+
+### [2026-03-03] 
+
+- Final Supervisor meeting.
+- Received feedback to improve the project.
+- Recieved strucutre for intemin report.
+
+### [2026-03-02] 
+
+- Implemented notification dropdown, currently sends nothing.
+- Implemented Sync inbox in notification dropdown. Completely works.
+    - > User A sends sync request to sync with User B.
+    - > User B check clicks notification icon.
+    - > Dropdown opens up.
+    - > Sync requests shows a red circle icon with number of requests.
+    - > User B clicks on the sync requests.
+    - > Ssytem shows a list of sync requests.
+    - > User B can either accept or decline a sync request.
+    - > If User B accepts the sync request, both User's sync count increases by 1.
+    - > If User B declines the sync request, the sync request is deleted.
+
+### [2026-02-02] 
+
+- Supervisor meeting. (Online).
+
+### [2026-01-30] 
+
+- Completed the display to access the users syncs and rotations list.
+
+### [2026-01-28] 
+
+- Completed the rotation system.
+    - > User A will go on artists page.
+    - > User A will click add to rotation on the artist page.
+    - > User A's rotation count increases by 1.
+- Plan on working on the display to showcase and access the syncs and rotations list.
+- Designed a wireframe of planned display.
+
+### [2026-01-27] 
+
+- Implemented the full sync/rotation flow.
+    - > User A will click sync on User B's profile.
+    - > It will say pending for User A
+    - > User B goes on User A's profile, it says sync back.
+    - > User B clicks sync back.
+    - > Both User's sync count increases by 1.
+- Plan on working onn the rotation system next.
+- Used another browser and also incognito mode to test out the Sync functionalities.
+
+### [2026-01-21] 
+
+- Intermin Report marks given. 82/100.
+- Decided to stick to the SYNC/ROTATIONS flow.
+
 ### [2025-12-30] tuesDAY
 
 - Queried the new 'reviews' table in Supabase. Handles both the reviews and ratings of an album.
@@ -16,7 +93,7 @@ _TERM 2_
 
 ### [2025-12-28] sunDAY
 
-- Created new Supaase Project. Restarting database/authentication side.
+- Created new Supabase Project. Restarting database/authentication side.
 - Created 'profiles' table that handles user authentication information.
 - Redone the authentication flow. Only email sign in possible now, removed confirm password, and also checks if username is available.
 - Added show password logic.
