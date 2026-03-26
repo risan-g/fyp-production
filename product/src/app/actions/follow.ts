@@ -56,12 +56,20 @@ export async function toggleFollow(targetUserId: string) {
     /**
      * Follow Logic
      * If no row exists, we insert a new record.
-     * The 'is_approved' column defaults to TRUE in the schema,
-     * so this creates an instant public connection.
+     * We dynamically decide if it's 'pending' or 'accepted' based on their privacy state.
      */
+    const { data: targetProfile } = await supabase
+      .from("profiles")
+      .select("is_private")
+      .eq("id", targetUserId)
+      .single();
+
+    const followStatus = targetProfile?.is_private ? "pending" : "accepted";
+
     const { error } = await supabase.from("follows").insert({
       follower_id: user.id,
       following_id: targetUserId,
+      status: followStatus,
     });
 
     if (error) throw new Error(error.message);

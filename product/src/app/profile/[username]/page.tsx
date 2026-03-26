@@ -74,14 +74,13 @@ export default async function ProfilePage({
       .select("*", { count: "exact", head: true })
       .eq("user_id", profile.id),
 
-    // Relationship Check. Is User A following User B
+    // Relationship Check. Is User A following or requesting to follow User B
     currentUser && !isOwnProfile
       ? supabase
         .from("follows")
         .select("*")
         .eq("follower_id", currentUser.id)
         .eq("following_id", profile.id)
-        .eq("status", "accepted")
         .single()
       : Promise.resolve({ data: null }),
 
@@ -137,7 +136,8 @@ export default async function ProfilePage({
   const syncCount = syncCountData.data || 0;
   const rotationCount = rotationCountData.count || 0;
 
-  const isFollowing = !!amIFollowingData.data;
+  const isFollowing = amIFollowingData.data?.status === "accepted";
+  const isPending = amIFollowingData.data?.status === "pending";
   const isFollower = !!areTheyFollowingMeData.data;
 
   // PRIVACY CHECK
@@ -190,7 +190,9 @@ export default async function ProfilePage({
             <div className="mb-8">
               <SyncButton
                 targetUserId={profile.id}
+                isPrivate={profile.is_private}
                 initialIsFollowing={isFollowing}
+                initialIsPending={isPending}
                 isTargetFollowingMe={isFollower}
               />
             </div>

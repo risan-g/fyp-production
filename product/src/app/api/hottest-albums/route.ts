@@ -22,7 +22,8 @@ export async function GET(req: Request) {
 
   let query = supabase
     .from("reviews")
-    .select("album_id, album_name, artist_name, album_image_url, rating");
+    .select("album_id, album_name, artist_name, album_image_url, rating, profiles!inner(is_private)")
+    .eq("profiles.is_private", false);
 
   if (hours !== null) {
     const since = new Date();

@@ -42,7 +42,8 @@ export default async function Home() {
   for (const hours of tryRanges) {
     let q = supabase
       .from("reviews")
-      .select("album_id, album_name, artist_name, album_image_url, rating");
+      .select("album_id, album_name, artist_name, album_image_url, rating, profiles!inner(is_private)")
+      .eq("profiles.is_private", false);
     if (hours !== null) {
       const since = new Date();
       since.setHours(since.getHours() - hours);

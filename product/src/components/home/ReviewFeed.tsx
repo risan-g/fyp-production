@@ -45,17 +45,20 @@ export default function ReviewFeed({ feedType, optimisticReview, user }: ReviewF
                     .select(`
             id, content, rating, created_at, user_id, 
             album_id, album_name, artist_name, album_image_url,
-            profiles!reviews_user_id_fkey (username, avatar_url)
+            profiles!inner (username, avatar_url, is_private)
           `)
                     .order("created_at", { ascending: false })
                     .limit(50); // Fetch top 50 recent reviews
 
-                if (feedType === "synced" && user) {
+                if (feedType === "global") {
+                    query = query.eq("profiles.is_private", false);
+                } else if (feedType === "synced" && user) {
                     // If synced feed, we only want reviews from users the current user follows
                     const { data: follows } = await supabase
                         .from("follows")
                         .select("following_id")
-                        .eq("follower_id", user.id);
+                        .eq("follower_id", user.id)
+                        .eq("status", "accepted");
 
                     if (follows && follows.length > 0) {
                         const followingIds = follows.map((f: any) => f.following_id);
