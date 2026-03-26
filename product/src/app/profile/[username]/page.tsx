@@ -4,6 +4,7 @@ import Link from "next/link";
 import AvatarUpload from "@/components/Avatar-Upload";
 import SyncButton from "@/components/SyncButton";
 import ProfileStats from "@/components/ProfileStats";
+import { SlidersHorizontal } from "lucide-react";
 
 /**
  * Format dates into a readable string.
@@ -148,6 +149,16 @@ export default async function ProfilePage({
       <div className="max-w-4xl mx-auto pt-24">
         {/* Profile Header Section */}
         <div className="flex flex-col items-center text-center pb-12 border-b-[3px] border-black">
+          {isOwnProfile && (
+            <Link
+              href="/settings"
+              className="mb-6 inline-flex items-center justify-center p-3 border-[3px] border-black bg-white shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-black hover:text-white hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none transition-all"
+              title="Settings"
+            >
+              <SlidersHorizontal className="w-6 h-6" />
+            </Link>
+          )}
+
           {/* Avatar Component */}
           <div className="mb-6">
             <AvatarUpload
