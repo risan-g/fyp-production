@@ -223,7 +223,16 @@ export default function NavBar() {
                     }}
                     className="w-full px-4 py-3 text-left font-mono text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors border-b-[3px] border-black"
                   >
-                    MY PROFILE
+                    PROFILE
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      router.push("/settings");
+                    }}
+                    className="w-full px-4 py-3 flex items-center justify-between text-left font-mono text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors border-b-[3px] border-black group"
+                  >
+                    <span>SETTINGS</span>
                   </button>
                   <button
                     onClick={handleSignOut}

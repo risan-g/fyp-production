@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { updatePrivacy } from "@/app/actions/settings";
-import { Lock, Unlock, Loader2 } from "lucide-react";
+import { Lock, Unlock, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface SettingsClientProps {
   initialPrivacy: boolean;
@@ -12,32 +13,72 @@ export default function SettingsClient({ initialPrivacy }: SettingsClientProps) 
   const [isPrivate, setIsPrivate] = useState(initialPrivacy);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Spam Prevention
+  const [cooldown, setCooldown] = useState(false);
+
+  // Toast Notification
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   const handlePrivacyToggle = async () => {
+    // Spam Prevention Filter
+    if (cooldown) {
+      showToast("PLEASE WAIT BEFORE CHANGING STATUS AGAIN.", "error");
+      return;
+    }
+
     setIsLoading(true);
+    setCooldown(true);
+
     const newValue = !isPrivate;
-    setIsPrivate(newValue);
+    setIsPrivate(newValue); // Optimistic UI update
 
     try {
       await updatePrivacy(newValue);
+      showToast(`ACCOUNT IS NOW ${newValue ? "PRIVATE" : "PUBLIC"}`, "success");
     } catch (error) {
       console.error("Failed to update privacy:", error);
-      setIsPrivate(!newValue); // Revert on failure
+      setIsPrivate(!newValue); // Revert on failure (Fault Tolerance)
+      showToast("DATABASE ERROR: FAILED TO UPDATE PRIVACY.", "error");
     } finally {
       setIsLoading(false);
+      // 2.5 second spam prevention timeout unlock
+      setTimeout(() => setCooldown(false), 2500);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-10 gap-12">
-      {/* 3:7 Split - Left Side (Tabs) */}
+    <div className="grid grid-cols-1 md:grid-cols-10 gap-12 relative">
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`fixed bottom-8 right-8 z-50 flex items-center gap-3 px-4 py-3 border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] font-mono text-[10px] uppercase font-bold tracking-widest ${toast.type === "error" ? "bg-accent-red text-white" : "bg-white text-black"
+              }`}
+          >
+            {toast.type === "error" ? <AlertTriangle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5 text-green-600" />}
+            {toast.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Left Side (Tabs) */}
       <div className="md:col-span-3 flex flex-col gap-2">
         <button
-          className="w-full text-left px-6 py-4 font-mono text-xs uppercase tracking-[0.2em] font-bold border-[3px] transition-all bg-black text-white border-black"
+          className="w-full text-left px-6 py-4 font-mono text-xs uppercase tracking-[0.2em] font-bold border-[3px] transition-all bg-black text-white border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]"
         >
           ACCOUNT
         </button>
       </div>
 
+      {/* Right Side (Content) */}
       <div className="md:col-span-7 bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] p-8 md:p-12 min-h-[500px]">
         <div className="flex flex-col max-w-2xl">
 
@@ -56,9 +97,10 @@ export default function SettingsClient({ initialPrivacy }: SettingsClientProps) 
 
               <button
                 onClick={handlePrivacyToggle}
-                disabled={isLoading}
-                className={`relative shrink-0 flex items-center justify-center p-4 border-[3px] border-black transition-all ${isPrivate ? "bg-black text-white shadow-none translate-y-1" : "bg-white text-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-neutral-100"
-                  }`}
+                className={`relative shrink-0 flex items-center justify-center p-4 border-[3px] transition-all ${isPrivate
+                    ? "bg-black text-white border-black shadow-none translate-y-1"
+                    : "bg-white text-black border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-neutral-100"
+                  } ${cooldown ? "opacity-50 cursor-not-allowed" : ""}`}
                 style={{ width: "64px", height: "64px" }}
               >
                 {isLoading ? (
@@ -71,7 +113,7 @@ export default function SettingsClient({ initialPrivacy }: SettingsClientProps) 
               </button>
             </div>
 
-            <div className="bg-neutral-100 border-[2px] border-black/10 p-4 font-mono text-[10px] tracking-widest uppercase flex items-center gap-2">
+            <div className="bg-neutral-100 border-[2px] border-black/10 p-4 font-mono text-[10px] tracking-widest uppercase flex items-center gap-2 mt-4">
               <span>STATUS:</span>
               {isPrivate ? <span className="text-accent-red font-bold">PRIVATE</span> : <span className="text-black font-bold">PUBLIC</span>}
             </div>

@@ -4,7 +4,6 @@ import Link from "next/link";
 import AvatarUpload from "@/components/Avatar-Upload";
 import SyncButton from "@/components/SyncButton";
 import ProfileStats from "@/components/ProfileStats";
-import { SlidersHorizontal } from "lucide-react";
 
 /**
  * Format dates into a readable string.
@@ -42,11 +41,13 @@ export default async function ProfilePage({
   /**
    * Retrieves basic user details for the profile being viewed.
    */
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("id, username, created_at, avatar_url")
+    .select("id, username, created_at, avatar_url, is_private")
     .ilike("username", username)
     .single();
+
+  if (profileError) console.error("Profile Query Error:", profileError);
 
   if (!profile) return notFound();
 
@@ -80,6 +81,7 @@ export default async function ProfilePage({
         .select("*")
         .eq("follower_id", currentUser.id)
         .eq("following_id", profile.id)
+        .eq("status", "accepted")
         .single()
       : Promise.resolve({ data: null }),
 
@@ -135,9 +137,11 @@ export default async function ProfilePage({
   const syncCount = syncCountData.data || 0;
   const rotationCount = rotationCountData.count || 0;
 
-  // Convert relationship checks to booleans
   const isFollowing = !!amIFollowingData.data;
   const isFollower = !!areTheyFollowingMeData.data;
+
+  // PRIVACY CHECK
+  const isApprovedToView = isOwnProfile || (profile.is_private === false) || (profile.is_private === true && isFollowing);
 
   const ratingsCount = ratingsCountData.count || 0;
   const reviewsCount = reviewsCountData.count || 0;
@@ -146,17 +150,15 @@ export default async function ProfilePage({
 
   return (
     <div className="bg-white text-black min-h-screen p-8">
-      <div className="max-w-4xl mx-auto pt-24">
+      <div className="max-w-4xl mx-auto pt-24 relative">
         {/* Profile Header Section */}
         <div className="flex flex-col items-center text-center pb-12 border-b-[3px] border-black">
+
+          {/* Privacy Status Badge */}
           {isOwnProfile && (
-            <Link
-              href="/settings"
-              className="mb-6 inline-flex items-center justify-center p-3 border-[3px] border-black bg-white shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-black hover:text-white hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none transition-all"
-              title="Settings"
-            >
-              <SlidersHorizontal className="w-6 h-6" />
-            </Link>
+            <div className={`mb-6 inline-flex items-center gap-2 px-4 py-2 border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] text-xs font-mono font-bold tracking-[0.2em] ${profile.is_private ? "bg-accent-red text-white" : "bg-white text-black"}`}>
+              <span>{profile.is_private ? "<-> PRIVATE <->" : "<o> PUBLIC <o>"}</span>
+            </div>
           )}
 
           {/* Avatar Component */}
@@ -174,8 +176,10 @@ export default async function ProfilePage({
             {profile.username}
           </h1>
 
-          <div className="inline-flex items-center gap-2 px-4 py-2 border-[3px] border-black bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)] text-black text-[10px] font-mono font-bold uppercase tracking-[0.2em] mb-10">
-            <span>EST. {formatDate(profile.created_at)}</span>
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
+            <div className="inline-flex items-center gap-2 px-4 py-2 border-[3px] border-black bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)] text-black text-[10px] font-mono font-bold uppercase tracking-[0.2em]">
+              <span>EST. {formatDate(profile.created_at)}</span>
+            </div>
           </div>
 
           {/* 
@@ -212,158 +216,171 @@ export default async function ProfilePage({
           </div>
         </div>
 
-        {/* Top Rated Albums Grid */}
-        <div className="mt-16 w-full">
-          <div className="flex items-end justify-between border-b-[3px] border-black pb-4 mb-8">
-            <h2 className="text-sm text-black font-mono font-bold uppercase tracking-[0.2em] flex items-center gap-2">
-              <span className="w-2 h-2 bg-accent-red flex-shrink-0"></span>
-              "TOP RATED"
+        {!isApprovedToView ? (
+          <div className="mt-16 w-full flex flex-col items-center justify-center border-[3px] border-black bg-neutral-100 p-16 shadow-[8px_8px_0px_rgba(0,0,0,1)] text-center">
+            <h2 className="text-4xl font-serif font-black uppercase tracking-tighter mb-4 text-black">
+              THIS ACCOUNT IS PRIVATE
             </h2>
-            <Link
-              href={`/profile/${rawUsername}/ratings`}
-              className="text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em] hover:text-accent-red hover:underline decoration-2 underline-offset-4 transition-colors flex items-center gap-1"
-            >
-              VIEW ALL <span className="text-lg leading-none">→</span>
-            </Link>
+            <p className="text-sm font-mono tracking-[0.1em] text-black/60 font-bold">
+              SYNC TO VIEW THEIR REVIEWS, RATINGS, AND ROTATIONS.
+            </p>
           </div>
-
-          {topRatings && topRatings.length > 0 ? (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                gap: "16px",
-                width: "100%",
-              }}
-            >
-              {topRatings.map((rating) => (
+        ) : (
+          <>
+            {/* Top Rated Albums Grid */}
+            <div className="mt-16 w-full">
+              <div className="flex items-end justify-between border-b-[3px] border-black pb-4 mb-8">
+                <h2 className="text-sm text-black font-mono font-bold uppercase tracking-[0.2em] flex items-center gap-2">
+                  <span className="w-2 h-2 bg-accent-red flex-shrink-0"></span>
+                  "TOP RATED"
+                </h2>
                 <Link
-                  href={`/album/${rating.album_id}`}
-                  key={rating.id}
-                  className="block group relative aspect-square bg-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
+                  href={`/profile/${rawUsername}/ratings`}
+                  className="text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em] hover:text-accent-red hover:underline decoration-2 underline-offset-4 transition-colors flex items-center gap-1"
                 >
-                  {/* Uses Cached Image URL from Database */}
-                  {rating.album_image_url ? (
-                    <img
-                      src={rating.album_image_url}
-                      alt={rating.album_name}
-                      className="w-full h-full object-cover transition-all duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center bg-gray-100">
-                      <span className="text-xs text-black font-mono font-bold uppercase">
-                        {rating.album_name || "UNKNOWN"}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="absolute top-0 right-0 bg-white px-3 py-2 text-xs font-mono font-bold text-black border-l-[3px] border-b-[3px] border-black shadow-[-2px_2px_0px_rgba(0,0,0,1)]">
-                    {rating.rating}
-                  </div>
+                  VIEW ALL <span className="text-lg leading-none">→</span>
                 </Link>
-              ))}
-
-              {/* Empty State Placeholders to maintain grid layout */}
-              {[...Array(Math.max(0, 4 - topRatings.length))].map((_, i) => (
-                <div
-                  key={i}
-                  className="aspect-square bg-white border-[3px] border-black border-dashed shadow-[4px_4px_0px_rgba(0,0,0,0.1)] relative"
-                >
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
-                    <span className="font-mono text-4xl">X</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="py-16 text-center border-[3px] border-black border-dashed bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)]">
-              <p className="text-black/50 text-xs font-mono font-bold uppercase tracking-[0.2em]">NO RATINGS LOGGED.</p>
-            </div>
-          )}
-        </div>
-
-        {/* Recent Reviews List */}
-        <div className="mt-20">
-          <div className="flex items-end justify-between border-b-[3px] border-black pb-4 mb-8">
-            <h2 className="text-sm text-black font-mono font-bold uppercase tracking-[0.2em] flex items-center gap-2">
-              <span className="w-2 h-2 bg-accent-red flex-shrink-0"></span>
-              "RECENT REVIEWS"
-            </h2>
-            <Link
-              href={`/profile/${rawUsername}/reviews`}
-              className="text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em] hover:text-accent-red hover:underline decoration-2 underline-offset-4 transition-colors flex items-center gap-1"
-            >
-              VIEW ALL <span className="text-lg leading-none">→</span>
-            </Link>
-          </div>
-
-          <div className="space-y-8">
-            {recentReviews && recentReviews.length > 0 ? (
-              recentReviews.map((review) => (
-                <div
-                  key={review.id}
-                  className="group bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] p-6 md:p-8 flex flex-col transition-all"
-                >
-                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 border-b-[2px] border-black/10 pb-6">
-                    <div className="flex gap-4 items-center">
-                      {review.album_image_url && (
-                        <div className="w-16 h-16 border-[2px] border-black shrink-0 relative">
-                          <img
-                            src={review.album_image_url}
-                            alt={review.album_name}
-                            className="w-full h-full object-cover transition-all relative z-10"
-                          />
-                          <div className="absolute top-1 left-1 w-full h-full bg-black/10 z-0"></div>
-                        </div>
-                      )}
-
-                      <div className="flex flex-col">
-                        <Link
-                          href={`/album/${review.album_id}`}
-                          className="text-xl font-bold font-sans uppercase tracking-tight text-black hover:underline decoration-accent-red decoration-2 underline-offset-4"
-                        >
-                          {review.album_name || "UNKNOWN ALBUM"}
-                        </Link>
-                        <span className="text-[10px] text-black/60 font-mono uppercase tracking-widest mt-1">
-                          {review.artist_name || "UNKNOWN ARTIST"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      {review.rating !== null && (
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-black font-black text-3xl font-sans tracking-tighter underline decoration-accent-red decoration-4">{review.rating}</span>
-                          <span className="text-[10px] font-sans tracking-tighter font-bold text-black/40">/100</span>
-                        </div>
-                      )}
-
-                      <div className="h-8 w-[2px] bg-black/10 mx-2 hidden sm:block"></div>
-
-                      <div className="flex flex-col items-end">
-                        <span className="text-[10px] text-black/40 font-mono uppercase tracking-[0.2em]">LOGGED</span>
-                        <span className="text-xs text-black font-mono font-bold uppercase">
-                          {new Date(review.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="relative">
-                    <div className="absolute -top-3 left-4 bg-white px-2 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-accent-red">"REVIEW"</div>
-                    <p className="text-black text-lg font-serif leading-relaxed whitespace-pre-wrap border-[2px] border-black p-6 pl-8 bg-neutral-50">
-                      {review.content}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="py-16 text-center border-[3px] border-black border-dashed bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)]">
-                <p className="text-black/50 text-xs font-mono font-bold uppercase tracking-[0.2em]">NO REVIEWS PUBLISHED.</p>
               </div>
-            )}
-          </div>
-        </div>
+
+              {topRatings && topRatings.length > 0 ? (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gap: "16px",
+                    width: "100%",
+                  }}
+                >
+                  {topRatings.map((rating) => (
+                    <Link
+                      href={`/album/${rating.album_id}`}
+                      key={rating.id}
+                      className="block group relative aspect-square bg-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
+                    >
+                      {/* Uses Cached Image URL from Database */}
+                      {rating.album_image_url ? (
+                        <img
+                          src={rating.album_image_url}
+                          alt={rating.album_name}
+                          className="w-full h-full object-cover transition-all duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center bg-gray-100">
+                          <span className="text-xs text-black font-mono font-bold uppercase">
+                            {rating.album_name || "UNKNOWN"}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="absolute top-0 right-0 bg-white px-3 py-2 text-xs font-mono font-bold text-black border-l-[3px] border-b-[3px] border-black shadow-[-2px_2px_0px_rgba(0,0,0,1)]">
+                        {rating.rating}
+                      </div>
+                    </Link>
+                  ))}
+
+                  {/* Empty State Placeholders to maintain grid layout */}
+                  {[...Array(Math.max(0, 4 - topRatings.length))].map((_, i) => (
+                    <div
+                      key={i}
+                      className="aspect-square bg-white border-[3px] border-black border-dashed shadow-[4px_4px_0px_rgba(0,0,0,0.1)] relative"
+                    >
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                        <span className="font-mono text-4xl">X</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-16 text-center border-[3px] border-black border-dashed bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)]">
+                  <p className="text-black/50 text-xs font-mono font-bold uppercase tracking-[0.2em]">NO RATINGS LOGGED.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Recent Reviews List */}
+            <div className="mt-20">
+              <div className="flex items-end justify-between border-b-[3px] border-black pb-4 mb-8">
+                <h2 className="text-sm text-black font-mono font-bold uppercase tracking-[0.2em] flex items-center gap-2">
+                  <span className="w-2 h-2 bg-accent-red flex-shrink-0"></span>
+                  "RECENT REVIEWS"
+                </h2>
+                <Link
+                  href={`/profile/${rawUsername}/reviews`}
+                  className="text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em] hover:text-accent-red hover:underline decoration-2 underline-offset-4 transition-colors flex items-center gap-1"
+                >
+                  VIEW ALL <span className="text-lg leading-none">→</span>
+                </Link>
+              </div>
+
+              <div className="space-y-8">
+                {recentReviews && recentReviews.length > 0 ? (
+                  recentReviews.map((review) => (
+                    <div
+                      key={review.id}
+                      className="group bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] p-6 md:p-8 flex flex-col transition-all"
+                    >
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 border-b-[2px] border-black/10 pb-6">
+                        <div className="flex gap-4 items-center">
+                          {review.album_image_url && (
+                            <div className="w-16 h-16 border-[2px] border-black shrink-0 relative">
+                              <img
+                                src={review.album_image_url}
+                                alt={review.album_name}
+                                className="w-full h-full object-cover transition-all relative z-10"
+                              />
+                              <div className="absolute top-1 left-1 w-full h-full bg-black/10 z-0"></div>
+                            </div>
+                          )}
+
+                          <div className="flex flex-col">
+                            <Link
+                              href={`/album/${review.album_id}`}
+                              className="text-xl font-bold font-sans uppercase tracking-tight text-black hover:underline decoration-accent-red decoration-2 underline-offset-4"
+                            >
+                              {review.album_name || "UNKNOWN ALBUM"}
+                            </Link>
+                            <span className="text-[10px] text-black/60 font-mono uppercase tracking-widest mt-1">
+                              {review.artist_name || "UNKNOWN ARTIST"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          {review.rating !== null && (
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-black font-black text-3xl font-sans tracking-tighter underline decoration-accent-red decoration-4">{review.rating}</span>
+                              <span className="text-[10px] font-sans tracking-tighter font-bold text-black/40">/100</span>
+                            </div>
+                          )}
+
+                          <div className="h-8 w-[2px] bg-black/10 mx-2 hidden sm:block"></div>
+
+                          <div className="flex flex-col items-end">
+                            <span className="text-[10px] text-black/40 font-mono uppercase tracking-[0.2em]">LOGGED</span>
+                            <span className="text-xs text-black font-mono font-bold uppercase">
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="relative">
+                        <div className="absolute -top-3 left-4 bg-white px-2 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-accent-red">"REVIEW"</div>
+                        <p className="text-black text-lg font-serif leading-relaxed whitespace-pre-wrap border-[2px] border-black p-6 pl-8 bg-neutral-50">
+                          {review.content}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-16 text-center border-[3px] border-black border-dashed bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)]">
+                    <p className="text-black/50 text-xs font-mono font-bold uppercase tracking-[0.2em]">NO REVIEWS PUBLISHED.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
