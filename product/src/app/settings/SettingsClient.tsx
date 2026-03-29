@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { updatePrivacy, updateUsername, deleteAccount, changePassword } from "@/app/actions/settings";
-import { Lock, Unlock, Loader2, AlertTriangle, CheckCircle, Save, Shield, Mail, Key, Trash2, X, Eye, EyeOff } from "lucide-react";
+import { Lock, Unlock, Loader2, AlertTriangle, CheckCircle, Save, Shield, Mail, Key, Trash2, Link2, Settings as SettingsIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import AvatarUpload from "@/components/Avatar-Upload";
 import { useRouter } from "next/navigation";
@@ -16,7 +16,7 @@ interface SettingsClientProps {
   initialPrivacy: boolean;
 }
 
-type TabState = "ACCOUNT" | "SECURITY" | "PRIVACY";
+type TabState = "ACCOUNT" | "SECURITY" | "PRIVACY" | "INTEGRATION" | "PREFERENCES";
 
 export default function SettingsClient({
   userId,
@@ -278,6 +278,26 @@ export default function SettingsClient({
             }`}
         >
           PRIVACY
+        </button>
+
+        <button
+          onClick={() => setActiveTab("INTEGRATION")}
+          className={`w-full text-left px-6 py-4 font-mono text-xs uppercase tracking-[0.2em] font-bold border-[3px] transition-all ${activeTab === "INTEGRATION"
+            ? "bg-black text-white border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]"
+            : "bg-white text-black border-black/20 hover:border-black/50 shadow-none hover:shadow-[2px_2px_0px_rgba(0,0,0,0.5)]"
+            }`}
+        >
+          INTEGRATION
+        </button>
+
+        <button
+          onClick={() => setActiveTab("PREFERENCES")}
+          className={`w-full text-left px-6 py-4 font-mono text-xs uppercase tracking-[0.2em] font-bold border-[3px] transition-all ${activeTab === "PREFERENCES"
+            ? "bg-black text-white border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]"
+            : "bg-white text-black border-black/20 hover:border-black/50 shadow-none hover:shadow-[2px_2px_0px_rgba(0,0,0,0.5)]"
+            }`}
+        >
+          PREFERENCES
         </button>
       </div>
 
@@ -626,6 +646,36 @@ export default function SettingsClient({
                   <span className="text-black font-bold">PUBLIC</span>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* INTEGRATION */}
+        {activeTab === "INTEGRATION" && (
+          <div className="flex flex-col w-full max-w-2xl animate-in fade-in duration-300">
+            <h2 className="text-2xl md:text-3xl font-black uppercase mb-8 border-b-[2px] border-black/10 pb-4">
+              Integration
+            </h2>
+            <div className="bg-neutral-50 border-[3px] border-black border-dashed p-12 flex flex-col items-center justify-center text-center">
+              <Link2 className="w-12 h-12 text-black/20 mb-4" />
+              <p className="font-mono text-sm font-bold text-black/40 uppercase tracking-widest">
+                "NO INTEGRATION ACTIVE"
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* PREFERENCES */}
+        {activeTab === "PREFERENCES" && (
+          <div className="flex flex-col w-full max-w-2xl animate-in fade-in duration-300">
+            <h2 className="text-2xl md:text-3xl font-black uppercase mb-8 border-b-[2px] border-black/10 pb-4">
+              Preferences
+            </h2>
+            <div className="bg-neutral-50 border-[3px] border-black border-dashed p-12 flex flex-col items-center justify-center text-center">
+              <SettingsIcon className="w-12 h-12 text-black/20 mb-4" />
+              <p className="font-mono text-sm font-bold text-black/40 uppercase tracking-widest">
+                "PREFERENCES COMING SOON"
+              </p>
             </div>
           </div>
         )}
