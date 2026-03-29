@@ -79,27 +79,24 @@ export default function SettingsClient({ initialPrivacy }: SettingsClientProps) 
       </div>
 
       {/* Right Side (Content) */}
-      <div className="md:col-span-7 bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] p-8 md:p-12 min-h-[500px]">
-        <div className="flex flex-col max-w-2xl">
+      <div className="md:col-span-7 h-fit bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] p-6 md:p-8">
+        <div className="flex flex-col w-full max-w-2xl">
 
-          <h2 className="text-3xl font-black uppercase mb-6 border-b-[2px] border-black/10 pb-4">
+          <h2 className="text-2xl md:text-3xl font-black uppercase mb-6 border-b-[2px] border-black/10 pb-4">
             Account Privacy
           </h2>
 
           <div className="flex flex-col gap-6">
-            <div className="flex justify-between items-start gap-8">
-              <div className="flex flex-col gap-2">
-                <h3 className="font-bold text-lg">Private Account</h3>
-                <p className="text-sm text-black/70 font-sans">
-                  When your account is private, only your approved Syncs can see your reviews, ratings, and rotations. Your reviews will also be hidden from the Global Live Feed.
-                </p>
+            <div className="flex justify-between items-center gap-8">
+
+              <div className="flex flex-col gap-2 flex-grow">
               </div>
 
               <button
                 onClick={handlePrivacyToggle}
                 className={`relative shrink-0 flex items-center justify-center p-4 border-[3px] transition-all ${isPrivate
-                    ? "bg-black text-white border-black shadow-none translate-y-1"
-                    : "bg-white text-black border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-neutral-100"
+                  ? "bg-black text-white border-black shadow-none translate-y-1"
+                  : "bg-white text-black border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-neutral-100"
                   } ${cooldown ? "opacity-50 cursor-not-allowed" : ""}`}
                 style={{ width: "64px", height: "64px" }}
               >
@@ -113,9 +110,13 @@ export default function SettingsClient({ initialPrivacy }: SettingsClientProps) 
               </button>
             </div>
 
-            <div className="bg-neutral-100 border-[2px] border-black/10 p-4 font-mono text-[10px] tracking-widest uppercase flex items-center gap-2 mt-4">
-              <span>STATUS:</span>
-              {isPrivate ? <span className="text-accent-red font-bold">PRIVATE</span> : <span className="text-black font-bold">PUBLIC</span>}
+            <div className="w-full bg-neutral-100 border-[2px] border-black/10 p-4 font-mono text-xs tracking-widest uppercase flex items-center gap-3">
+              <span className="text-neutral-500">STATUS:</span>
+              {isPrivate ? (
+                <span className="text-accent-red font-bold">PRIVATE</span>
+              ) : (
+                <span className="text-black font-bold">PUBLIC</span>
+              )}
             </div>
           </div>
 
