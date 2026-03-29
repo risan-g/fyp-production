@@ -1,7 +1,9 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 /**
  * Server Action: Update Privacy
@@ -72,4 +74,74 @@ export async function updateUsername(newUsername: string) {
   // Revalidate so the old profile disappears and new one populates
   revalidatePath("/profile");
   return { success: true, newHandle: cleanUsername };
+}
+
+/**
+ * Delete User Account
+ */
+export async function deleteAccount(password: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Not authenticated" };
+
+  // Verify the password
+  const { error: loginError } = await supabase.auth.signInWithPassword({
+    email: user.email!,
+    password,
+  });
+
+  if (loginError) {
+    return { error: "INCORRECT PASSWORD. DELETION CANNOT PROCEED." };
+  }
+
+  // Perform the deletion
+  const { error: deletionError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+
+  if (deletionError) {
+    console.error("Admin deletion error:", deletionError);
+    return { error: "SYSTEM FAILURE: FAILED TO CLEAN UP AUTH ACCOUNT." };
+  }
+
+  // sign out the current session to clear browser cookies
+  await supabase.auth.signOut();
+
+  // hard-redirect
+  revalidatePath("/");
+  return { success: true };
+}
+
+/**
+ * Change Password
+ */
+export async function changePassword(currentPassword: string, newPassword: string) {
+  const supabase = await createClient();
+
+  // Verify existence of session
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // Verify current password
+  const { error: loginError } = await supabase.auth.signInWithPassword({
+    email: user.email!,
+    password: currentPassword,
+  });
+
+  if (loginError) {
+    return { error: "CURRENT PASSWORD IS INCORRECT." };
+  }
+
+  // Update password
+  const { error: updateError } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (updateError) {
+    return { error: updateError.message.toUpperCase() };
+  }
+
+  return { success: true };
 }

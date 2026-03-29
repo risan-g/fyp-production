@@ -47,8 +47,6 @@ export default function NavBar() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // LOCAL EVENT SYNC
-  // Listens for explicit manual 'profileUpdated' dispatches (from AvatarUpload or Settings)
   useEffect(() => {
     if (!user?.id) return;
 
@@ -57,7 +55,6 @@ export default function NavBar() {
     };
 
     window.addEventListener("profileUpdated", handleProfileUpdate);
-    
     return () => {
       window.removeEventListener("profileUpdated", handleProfileUpdate);
     };
@@ -73,6 +70,10 @@ export default function NavBar() {
     if (data) {
       setUsername(data.username);
       setAvatarUrl(data.avatar_url);
+    } else {
+      setUsername(null);
+      setAvatarUrl(null);
+      setUser(null);
     }
   };
 

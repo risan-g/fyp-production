@@ -28,6 +28,7 @@ export default async function SettingsPage() {
         <SettingsClient 
           userId={profile?.id || ""}
           initialUsername={profile?.username || ""}
+          initialEmail={user.email || ""}
           initialAvatarUrl={profile?.avatar_url || null}
           initialPrivacy={profile?.is_private ?? false} 
         />
