@@ -56,6 +56,7 @@ export default function AvatarUpload({
 
       setAvatarUrl(publicUrl);
       router.refresh();
+      window.dispatchEvent(new Event("profileUpdated"));
     } catch (error: any) {
       alert("Error uploading: " + error.message);
     } finally {
@@ -74,6 +75,7 @@ export default function AvatarUpload({
       if (error) throw error;
       setAvatarUrl(null);
       router.refresh();
+      window.dispatchEvent(new Event("profileUpdated"));
     } catch (error: any) {
       alert("Error deleting: " + error.message);
     } finally {

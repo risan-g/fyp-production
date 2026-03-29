@@ -15,7 +15,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_private")
+    .select("id, is_private, username, avatar_url")
     .eq("id", user.id)
     .single();
 
@@ -25,7 +25,12 @@ export default async function SettingsPage() {
         <h1 className="text-6xl font-serif font-black uppercase tracking-tighter mb-12 border-b-[4px] border-black pb-6">
           "SETTINGS"
         </h1>
-        <SettingsClient initialPrivacy={profile?.is_private ?? false} />
+        <SettingsClient 
+          userId={profile?.id || ""}
+          initialUsername={profile?.username || ""}
+          initialAvatarUrl={profile?.avatar_url || null}
+          initialPrivacy={profile?.is_private ?? false} 
+        />
       </div>
     </main>
   );

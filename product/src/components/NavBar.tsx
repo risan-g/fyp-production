@@ -47,6 +47,22 @@ export default function NavBar() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // LOCAL EVENT SYNC
+  // Listens for explicit manual 'profileUpdated' dispatches (from AvatarUpload or Settings)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const handleProfileUpdate = () => {
+      fetchProfile(user.id);
+    };
+
+    window.addEventListener("profileUpdated", handleProfileUpdate);
+    
+    return () => {
+      window.removeEventListener("profileUpdated", handleProfileUpdate);
+    };
+  }, [user?.id]);
+
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
