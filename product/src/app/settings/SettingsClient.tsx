@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { updatePrivacy, updateUsername, deleteAccount, changePassword } from "@/app/actions/settings";
-import { Lock, Unlock, Loader2, AlertTriangle, CheckCircle, Save, Shield, Mail, Key, Trash2, Link2, Settings as SettingsIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import AvatarUpload from "@/components/Avatar-Upload";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 interface SettingsClientProps {
@@ -14,6 +13,8 @@ interface SettingsClientProps {
   initialEmail: string;
   initialAvatarUrl: string | null;
   initialPrivacy: boolean;
+  isSpotifyLinked: boolean;
+  initialSpotifyUsername: string | null;
 }
 
 type TabState = "ACCOUNT" | "SECURITY" | "PRIVACY" | "INTEGRATION" | "PREFERENCES";
@@ -24,11 +25,15 @@ export default function SettingsClient({
   initialEmail,
   initialAvatarUrl,
   initialPrivacy,
+  isSpotifyLinked,
+  initialSpotifyUsername,
 }: SettingsClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Navigation State
-  const [activeTab, setActiveTab] = useState<TabState>("ACCOUNT");
+  const initialTab = (searchParams.get("tab") as TabState) || "ACCOUNT";
+  const [activeTab, setActiveTab] = useState<TabState>(initialTab);
 
   // Privacy State
   const [isPrivate, setIsPrivate] = useState(initialPrivacy);
@@ -59,6 +64,11 @@ export default function SettingsClient({
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showDeletePassword, setShowDeletePassword] = useState(false);
+
+  // Spotify
+  const [spotifyLinked, setSpotifyLinked] = useState(isSpotifyLinked);
+  const [spotifyUsername, setSpotifyUsername] = useState(initialSpotifyUsername);
+  const [isSpotifyLoading, setIsSpotifyLoading] = useState(false);
 
   const supabase = createClient();
 
@@ -230,6 +240,62 @@ export default function SettingsClient({
     }
   };
 
+  /**
+   * Connect Spotify
+   */
+  const handleLinkSpotify = async () => {
+    setIsSpotifyLoading(true);
+
+    try {
+      // Explicitly use linkIdentity to attach Spotify to the existing session
+      const { data, error } = await supabase.auth.linkIdentity({
+        provider: "spotify",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/settings?tab=INTEGRATION")}`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Spotify Link Error:", error);
+      showToast("FAILED TO CONNECT SPOTIFY.", "error");
+      setIsSpotifyLoading(false);
+    }
+  };
+
+  /**
+   * Unlink Spotify
+   */
+  const handleUnlinkSpotify = async () => {
+    setIsSpotifyLoading(true);
+    try {
+      const { data } = await supabase.auth.getUserIdentities();
+      const spotifyIdentity = data?.identities?.find((id: any) => id.provider === "spotify");
+
+      if (!spotifyIdentity) {
+        showToast("NO SPOTIFY ACCOUNT FOUND.", "error");
+        return;
+      }
+
+      const { error } = await supabase.auth.unlinkIdentity(spotifyIdentity);
+
+      if (error) throw error;
+
+      setSpotifyLinked(false);
+      setSpotifyUsername(null);
+      showToast("SPOTIFY ACCOUNT UNLINKED.", "success");
+    } catch (error) {
+      console.error("Failed to unlink Spotify:", error);
+      showToast("FAILED TO DISCONNECT.", "error");
+    } finally {
+      setIsSpotifyLoading(false);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-10 gap-12 relative">
 
@@ -242,7 +308,6 @@ export default function SettingsClient({
             className={`fixed bottom-8 right-8 z-50 flex items-center gap-3 px-4 py-3 border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] font-mono text-[10px] uppercase font-bold tracking-widest ${toast.type === "error" ? "bg-accent-red text-white" : "bg-white text-black"
               }`}
           >
-            {toast.type === "error" ? <AlertTriangle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5 text-green-600" />}
             {toast.message}
           </motion.div>
         )}
@@ -346,14 +411,9 @@ export default function SettingsClient({
                     exit={{ opacity: 0, height: 0, marginTop: 0 }}
                     onClick={handleUsernameSave}
                     disabled={isUsernameLoading}
-                    className="bg-accent-red text-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] font-mono font-bold uppercase tracking-[0.2em] text-xs p-4 flex items-center justify-center gap-2 transition-all w-fit"
+                    className="bg-accent-red text-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] font-mono font-bold uppercase tracking-[0.2em] text-xs p-4 flex items-center justify-center transition-all w-fit"
                   >
-                    {isUsernameLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4" />
-                    )}
-                    SAVE HANDLE
+                    {isUsernameLoading ? "..." : "SAVE HANDLE"}
                   </motion.button>
                 )}
               </AnimatePresence>
@@ -367,10 +427,7 @@ export default function SettingsClient({
 
             {/* Email Change */}
             <section className="flex flex-col gap-6">
-              <div className="flex items-center gap-3">
-                <Mail className="w-6 h-6" />
-                <h3 className="text-xl font-black uppercase tracking-tight">Email Address</h3>
-              </div>
+              <h3 className="text-xl font-black uppercase tracking-tight">Email Address</h3>
 
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
@@ -397,10 +454,9 @@ export default function SettingsClient({
                 <button
                   onClick={handleEmailUpdate}
                   disabled={isEmailLoading}
-                  className="bg-black text-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] font-mono font-bold uppercase tracking-[0.2em] text-[10px] py-3 px-6 w-fit transition-all flex items-center gap-2"
+                  className="bg-black text-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] font-mono font-bold uppercase tracking-[0.2em] text-[10px] py-3 px-6 w-fit transition-all flex items-center"
                 >
-                  {isEmailLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                  UPDATE EMAIL
+                  {isEmailLoading ? "..." : "UPDATE EMAIL"}
                 </button>
               </div>
             </section>
@@ -409,10 +465,7 @@ export default function SettingsClient({
 
             {/* Password Change */}
             <section className="flex flex-col gap-6">
-              <div className="flex items-center gap-3">
-                <Key className="w-6 h-6" />
-                <h3 className="text-xl font-black uppercase tracking-tight">Security Credentials</h3>
-              </div>
+              <h3 className="text-xl font-black uppercase tracking-tight">Security Credentials</h3>
 
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
@@ -479,10 +532,9 @@ export default function SettingsClient({
                 <button
                   onClick={handlePasswordUpdate}
                   disabled={isPasswordLoading}
-                  className="bg-black text-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] font-mono font-bold uppercase tracking-[0.2em] text-[10px] py-3 px-6 w-fit transition-all flex items-center gap-2 mt-4"
+                  className="bg-black text-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] font-mono font-bold uppercase tracking-[0.2em] text-[10px] py-3 px-6 w-fit transition-all flex items-center mt-4"
                 >
-                  {isPasswordLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                  CHANGE PASSWORD
+                  {isPasswordLoading ? "..." : "CHANGE PASSWORD"}
                 </button>
               </div>
             </section>
@@ -491,10 +543,7 @@ export default function SettingsClient({
 
             {/* Delete Account*/}
             <section className="flex flex-col gap-6">
-              <div className="flex items-center gap-3 text-accent-red">
-                <AlertTriangle className="w-6 h-6" />
-                <h3 className="text-xl font-black uppercase tracking-tight">Danger Zone</h3>
-              </div>
+              <h3 className="text-xl font-black uppercase tracking-tight text-accent-red">Danger Zone</h3>
 
               <div className="bg-red-50 border-[3px] border-accent-red p-6 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex flex-col gap-1">
@@ -504,9 +553,8 @@ export default function SettingsClient({
 
                 <button
                   onClick={() => setIsDeleteModalOpen(true)}
-                  className="bg-accent-red text-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] font-mono font-bold uppercase tracking-[0.2em] text-[10px] py-3 px-6 transition-all flex items-center gap-2 shrink-0"
+                  className="bg-accent-red text-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] font-mono font-bold uppercase tracking-[0.2em] text-[10px] py-3 px-6 transition-all flex items-center shrink-0"
                 >
-                  <Trash2 className="w-4 h-4" />
                   DELETE ACCOUNT
                 </button>
               </div>
@@ -530,8 +578,8 @@ export default function SettingsClient({
                 className="bg-white border-[6px] border-accent-red w-full max-w-xl p-8 md:p-12 relative shadow-[20px_20px_0px_#C8102E]"
               >
                 <div className="flex flex-col items-center text-center gap-8">
-                  <div className="w-24 h-24 bg-accent-red rounded-full flex items-center justify-center text-white">
-                    <Trash2 className="w-12 h-12" />
+                  <div>
+                    {/* Icon section removed for minimalist design */}
                   </div>
 
                   <div className="flex flex-col gap-4">
@@ -578,16 +626,9 @@ export default function SettingsClient({
                     <button
                       onClick={handleDeleteAccount}
                       disabled={isDeleting}
-                      className="w-full bg-accent-red text-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] py-5 font-mono font-black text-lg uppercase tracking-[0.3em] flex items-center justify-center gap-4 hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all active:translate-y-2"
+                      className="w-full bg-accent-red text-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] py-5 font-mono font-black text-lg uppercase tracking-[0.3em] flex items-center justify-center hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all active:translate-y-2"
                     >
-                      {isDeleting ? (
-                        <>
-                          <Loader2 className="w-6 h-6 animate-spin" />
-                          PURGING...
-                        </>
-                      ) : (
-                        "CONFIRM PURGE"
-                      )}
+                      {isDeleting ? "PURGING..." : "CONFIRM PURGE"}
                     </button>
 
                     <button
@@ -622,18 +663,16 @@ export default function SettingsClient({
 
                 <button
                   onClick={handlePrivacyToggle}
-                  className={`relative shrink-0 flex items-center justify-center p-4 border-[3px] transition-all ${isPrivate
+                  className={`relative shrink-0 flex items-center justify-center p-4 border-[3px] transition-all font-mono text-xs font-black uppercase ${isPrivate
                     ? "bg-black text-white border-black shadow-none translate-y-1"
                     : "bg-white text-black border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-neutral-100"
                     } ${cooldown ? "opacity-50 cursor-not-allowed" : ""}`}
-                  style={{ width: "64px", height: "64px" }}
+                  style={{ width: "120px", height: "64px" }}
                 >
-                  {isPrivacyLoading ? (
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                  ) : isPrivate ? (
-                    <Lock className="w-8 h-8" />
+                  {isPrivacyLoading ? "..." : isPrivate ? (
+                    "MAKE PUBLIC"
                   ) : (
-                    <Unlock className="w-8 h-8" />
+                    "MAKE PRIVATE"
                   )}
                 </button>
               </div>
@@ -656,11 +695,48 @@ export default function SettingsClient({
             <h2 className="text-2xl md:text-3xl font-black uppercase mb-8 border-b-[2px] border-black/10 pb-4">
               Integration
             </h2>
-            <div className="bg-neutral-50 border-[3px] border-black border-dashed p-12 flex flex-col items-center justify-center text-center">
-              <Link2 className="w-12 h-12 text-black/20 mb-4" />
-              <p className="font-mono text-sm font-bold text-black/40 uppercase tracking-widest">
-                "NO INTEGRATION ACTIVE"
-              </p>
+            <div className={`p-8 md:p-12 flex flex-col items-center justify-center text-center transition-all ${spotifyLinked
+              ? "bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)]"
+              : "bg-neutral-50 border-[3px] border-black border-dashed"
+              }`}>
+
+              <div className="flex flex-col items-center justify-center mb-6">
+                {isSpotifyLoading && <p className="font-mono text-[10px] text-black/40 animate-pulse">SYNCHRONIZING...</p>}
+              </div>
+
+              {spotifyLinked ? (
+                <>
+                  <p className="font-mono text-xs font-bold text-black/40 uppercase tracking-widest mb-1">
+                    CONNECTED ACCOUNT
+                  </p>
+                  <h3 className="text-2xl font-black uppercase tracking-tighter text-black mb-8">
+                    {spotifyUsername || "SPOTIFY_USER"}
+                  </h3>
+                  <button
+                    onClick={handleUnlinkSpotify}
+                    disabled={isSpotifyLoading}
+                    className="group border-[3px] border-black bg-white px-8 py-3 w-full max-w-xs font-mono font-bold text-xs uppercase tracking-[0.2em] shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-[#1DB954] hover:border-[#1DB954] hover:shadow-[4px_4px_0px_rgba(0,0,0,0.1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:text-white transition-all disabled:opacity-50"
+                  >
+                    {isSpotifyLoading ? "UNLINKING..." : "UNLINK ACCOUNT"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-2xl font-black uppercase tracking-tighter text-black mb-2">
+                    SPOTIFY
+                  </h3>
+                  <p className="font-mono text-xs font-bold text-black/40 uppercase tracking-[0.1em] mb-8 leading-relaxed max-w-xs mx-auto">
+                    LINK YOUR ACCOUNT TO SYNC YOUR LISTENING HISTORY AND TOP TRACKS.
+                  </p>
+                  <button
+                    onClick={handleLinkSpotify}
+                    disabled={isSpotifyLoading}
+                    className="bg-[#1DB954] text-black border-[3px] border-black px-8 py-4 w-full max-w-xs font-mono font-black text-sm uppercase tracking-[0.2em] shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isSpotifyLoading ? "..." : "CONNECT"}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -672,7 +748,6 @@ export default function SettingsClient({
               Preferences
             </h2>
             <div className="bg-neutral-50 border-[3px] border-black border-dashed p-12 flex flex-col items-center justify-center text-center">
-              <SettingsIcon className="w-12 h-12 text-black/20 mb-4" />
               <p className="font-mono text-sm font-bold text-black/40 uppercase tracking-widest">
                 "PREFERENCES COMING SOON"
               </p>

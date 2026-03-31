@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -9,24 +9,56 @@ import type { NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
 
-  /**
-   * The 'code' is a temporary authorisation string provided by Supabase.
-   * We extract this from the URL search parameters.
-   */
   const code = requestUrl.searchParams.get("code");
+  const error = requestUrl.searchParams.get("error");
+  const errorDescription = requestUrl.searchParams.get("error_description");
   const origin = requestUrl.origin;
+  const next = requestUrl.searchParams.get("next") || "/";
+
+  // If Supabase/Spotify returned an error, redirect with the error message
+  if (error) {
+    console.error(`[Auth Callback] Error from provider: ${error} - ${errorDescription}`);
+    const errorRedirect = new URL(`${origin}${next}`);
+    errorRedirect.searchParams.set("auth_error", errorDescription || error);
+    return NextResponse.redirect(errorRedirect);
+  }
+
+  // Prepare the redirect response FIRST so we can attach cookies to it
+  const redirectUrl = new URL(`${origin}${next}`);
+  const response = NextResponse.redirect(redirectUrl);
 
   if (code) {
-    const supabase = await createClient();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              // Set cookies on the outgoing response so the browser receives them
+              response.cookies.set(name, value, options);
+            });
+          },
+        },
+      }
+    );
 
     /**
      * Security Handshake:
      * Exchanges the temporary 'code' for a persistent user session.
-     * This process verifies the user's email and initialises their session cookies.
      */
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (exchangeError) {
+      console.error("[Auth Callback] Code exchange failed:", exchangeError.message);
+      const errorRedirect = new URL(`${origin}${next}`);
+      errorRedirect.searchParams.set("auth_error", exchangeError.message);
+      return NextResponse.redirect(errorRedirect);
+    }
   }
 
-  // Once authenticated, redirect the user back to the application homepage.
-  return NextResponse.redirect(`${origin}/`);
+  return response;
 }
