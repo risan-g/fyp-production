@@ -15,6 +15,7 @@ interface SettingsClientProps {
   initialPrivacy: boolean;
   isSpotifyLinked: boolean;
   initialSpotifyUsername: string | null;
+  initialSpotifyEmail: string | null;
 }
 
 type TabState = "ACCOUNT" | "SECURITY" | "PRIVACY" | "INTEGRATION" | "PREFERENCES";
@@ -27,6 +28,7 @@ export default function SettingsClient({
   initialPrivacy,
   isSpotifyLinked,
   initialSpotifyUsername,
+  initialSpotifyEmail,
 }: SettingsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -706,12 +708,12 @@ export default function SettingsClient({
 
               {spotifyLinked ? (
                 <>
-                  <p className="font-mono text-xs font-bold text-black/40 uppercase tracking-widest mb-1">
-                    CONNECTED ACCOUNT
-                  </p>
-                  <h3 className="text-2xl font-black uppercase tracking-tighter text-black mb-8">
+                  <h3 className="text-2xl font-black uppercase tracking-tighter text-black mb-1">
                     {spotifyUsername || "SPOTIFY_USER"}
                   </h3>
+                  <p className="font-mono text-[10px] font-bold text-black/30 uppercase tracking-[0.2em] mb-8">
+                    {initialSpotifyEmail || "NO_EMAIL_FOUND"}
+                  </p>
                   <button
                     onClick={handleUnlinkSpotify}
                     disabled={isSpotifyLoading}
