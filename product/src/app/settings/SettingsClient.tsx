@@ -254,6 +254,10 @@ export default function SettingsClient({
         provider: "spotify",
         options: {
           redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/settings?tab=INTEGRATION")}`,
+          scopes: "user-read-currently-playing user-read-playback-state user-top-read",
+          queryParams: {
+            show_dialog: "true",
+          },
         },
       });
 
