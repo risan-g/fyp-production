@@ -154,12 +154,22 @@ export default async function ProfilePage({
       <div className="max-w-4xl mx-auto pt-24 relative">
         {/* Profile Header Section */}
         <div className="flex flex-col items-center text-center pb-12 border-b-[3px] border-black">
-          {/* only user themselves can view this. */}
-          {isOwnProfile && currentUser && (
-            <div className="w-full mt-4">
-              <CurrentlyPlaying />
-            </div>
-          )}
+          {/* 
+              Visibility Rules:
+              - Owner: Always see.
+              - Public Account: Viewers see if they have Requested (Pending) OR are Accepted Syncs.
+              - Private Account: Viewers see ONLY if they are Accepted Syncs.
+          */}
+          {(isOwnProfile ||
+            (!profile.is_private && (isFollowing || isPending)) ||
+            (profile.is_private && isFollowing)) && (
+              <div className="w-full mt-4">
+                <CurrentlyPlaying
+                  targetUserId={profile.id}
+                  isOwnProfile={isOwnProfile}
+                />
+              </div>
+            )}
 
           {/* Privacy Status Badge */}
           {isOwnProfile && (
