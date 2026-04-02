@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
 import NotificationBell from "@/components/NotificationBell";
+import SyncedCurrentPlaying from "@/components/SyncedCurrentPlaying";
 
 interface SearchResults {
   users: { id: string; name: string; image: string | null; type: "user" }[];
@@ -152,6 +153,7 @@ export default function NavBar() {
 
   return (
     <header className="w-full flex items-center justify-between px-6 py-4 bg-white border-b-[3px] border-black sticky top-0 z-50">
+      <SyncedCurrentPlaying />
       <div
         className="text-black font-black font-serif text-3xl uppercase tracking-tighter cursor-pointer hover:text-accent-red transition-colors"
         onClick={() => router.push("/")}
