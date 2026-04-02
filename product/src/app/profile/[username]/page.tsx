@@ -4,6 +4,7 @@ import Link from "next/link";
 import AvatarUpload from "@/components/Avatar-Upload";
 import SyncButton from "@/components/SyncButton";
 import ProfileStats from "@/components/ProfileStats";
+import CurrentlyPlaying from "@/components/CurrentlyPlaying";
 
 /**
  * Format dates into a readable string.
@@ -205,6 +206,12 @@ export default async function ProfilePage({
             syncCount={syncCount}
             rotationCount={rotationCount}
           />
+          {/* only user themselves can view this */}
+          {/* {isOwnProfile && currentUser && (
+            <div className="w-full mt-4">
+              <CurrentlyPlaying />
+            </div>
+          )} */}
 
           {/* Ratings/Reviews */}
           <div className="flex gap-12 mt-8 text-xs font-mono uppercase tracking-[0.2em] text-black/60 font-bold border-[3px] border-black p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)] bg-white">
