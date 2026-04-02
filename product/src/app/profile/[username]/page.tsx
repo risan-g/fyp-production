@@ -154,6 +154,12 @@ export default async function ProfilePage({
       <div className="max-w-4xl mx-auto pt-24 relative">
         {/* Profile Header Section */}
         <div className="flex flex-col items-center text-center pb-12 border-b-[3px] border-black">
+          {/* only user themselves can view this. */}
+          {isOwnProfile && currentUser && (
+            <div className="w-full mt-4">
+              <CurrentlyPlaying />
+            </div>
+          )}
 
           {/* Privacy Status Badge */}
           {isOwnProfile && (
@@ -206,12 +212,6 @@ export default async function ProfilePage({
             syncCount={syncCount}
             rotationCount={rotationCount}
           />
-          {/* only user themselves can view this */}
-          {/* {isOwnProfile && currentUser && (
-            <div className="w-full mt-4">
-              <CurrentlyPlaying />
-            </div>
-          )} */}
 
           {/* Ratings/Reviews */}
           <div className="flex gap-12 mt-8 text-xs font-mono uppercase tracking-[0.2em] text-black/60 font-bold border-[3px] border-black p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)] bg-white">

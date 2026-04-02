@@ -23,6 +23,7 @@ export default async function SettingsPage() {
   const spotifyIdentity = identitiesData?.identities?.find(id => id.provider === "spotify");
   const isSpotifyLinked = !!spotifyIdentity;
   const spotifyUsername = spotifyIdentity?.identity_data?.preferred_username || spotifyIdentity?.identity_data?.name || null;
+  const spotifyEmail = spotifyIdentity?.identity_data?.email || null;
 
   return (
     <main className="bg-background text-black min-h-screen pt-24 px-6 md:px-12">
@@ -38,6 +39,7 @@ export default async function SettingsPage() {
           initialPrivacy={profile?.is_private ?? false}
           isSpotifyLinked={isSpotifyLinked}
           initialSpotifyUsername={spotifyUsername}
+          initialSpotifyEmail={spotifyEmail}
         />
       </div>
     </main>
