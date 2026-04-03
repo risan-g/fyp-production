@@ -145,3 +145,26 @@ export async function changePassword(currentPassword: string, newPassword: strin
 
   return { success: true };
 }
+
+/**
+ * Toggles whether the user's Spotify currently playing is shown.
+ */
+export async function updateSpotifyVisibility(show: boolean) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ show_currently_playing: show })
+    .eq("id", user.id);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/settings");
+  revalidatePath("/profile");
+}

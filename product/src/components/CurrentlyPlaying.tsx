@@ -3,20 +3,32 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-export default function CurrentlyPlaying({ targetUserId, isOwnProfile }: { targetUserId: string, isOwnProfile: boolean }) {
+interface CurrentlyPlayingProps {
+  targetUserId: string;
+  isOwnProfile: boolean;
+  showCurrentlyPlaying?: boolean;
+}
+
+export default function CurrentlyPlaying({ targetUserId, isOwnProfile, showCurrentlyPlaying = true }: CurrentlyPlayingProps) {
   const [track, setTrack] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
+    if (!showCurrentlyPlaying) {
+      setLoading(false);
+      return;
+    }
+
     async function getTrack() {
       try {
         if (isOwnProfile) {
-          // Fetch directly from Spotify for the owner (broadcaster mode)
           const { data: sessionData } = await supabase.auth.getSession();
           const token = sessionData.session?.provider_token;
 
           if (!token) {
+            setStatus("SPOTIFY LINKED BUT SESSION EXPIRED. RE-LOGIN VIA SPOTIFY.");
             setLoading(false);
             return;
           }
@@ -28,7 +40,12 @@ export default function CurrentlyPlaying({ targetUserId, isOwnProfile }: { targe
           if (res.status === 200) {
             const data = await res.json();
             setTrack(data);
+            setStatus(null);
+          } else if (res.status === 204) {
+            setTrack(null);
+            setStatus("SPOTIFY ACTIVE: NOTHING PLAYING RIGHT NOW.");
           } else {
+            console.error("Spotify API Error:", res.status);
             setTrack(null);
           }
         } else {
@@ -68,10 +85,22 @@ export default function CurrentlyPlaying({ targetUserId, isOwnProfile }: { targe
     getTrack();
     const interval = setInterval(getTrack, 30000);
     return () => clearInterval(interval);
-  }, [supabase, isOwnProfile, targetUserId]);
+  }, [supabase, isOwnProfile, targetUserId, showCurrentlyPlaying]);
 
   if (loading) return null;
-  if (!track || !track.item) return null;
+  if (!showCurrentlyPlaying) return null;
+
+  // If nothing is playing, and it's the owner's profile, show a status if we have one
+  if (!track || !track.item) {
+    if (isOwnProfile && status) {
+      return (
+        <div className="w-full border-[2px] border-black/10 p-3 font-mono text-[9px] my-4 bg-neutral-50/50 text-black/40 uppercase tracking-widest text-center">
+          {status}
+        </div>
+      );
+    }
+    return null;
+  }
 
   return (
     <div className="w-full border-2 border-black p-3 font-mono text-[10px] my-4 bg-gray-50">

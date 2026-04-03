@@ -44,7 +44,7 @@ export default async function ProfilePage({
    */
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("id, username, created_at, avatar_url, is_private")
+    .select("id, username, created_at, avatar_url, is_private, show_currently_playing")
     .ilike("username", username)
     .single();
 
@@ -167,6 +167,7 @@ export default async function ProfilePage({
                 <CurrentlyPlaying
                   targetUserId={profile.id}
                   isOwnProfile={isOwnProfile}
+                  showCurrentlyPlaying={profile.show_currently_playing ?? true}
                 />
               </div>
             )}

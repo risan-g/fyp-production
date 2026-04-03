@@ -25,6 +25,7 @@ export default function NavBar() {
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [showCurrentlyPlaying, setShowCurrentlyPlaying] = useState<boolean>(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const supabase = createClient();
 
@@ -64,13 +65,14 @@ export default function NavBar() {
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("username, avatar_url")
+      .select("username, avatar_url, show_currently_playing")
       .eq("id", userId)
       .single();
 
     if (data) {
       setUsername(data.username);
       setAvatarUrl(data.avatar_url);
+      setShowCurrentlyPlaying(data.show_currently_playing ?? true);
     } else {
       setUsername(null);
       setAvatarUrl(null);
@@ -153,7 +155,7 @@ export default function NavBar() {
 
   return (
     <header className="w-full flex items-center justify-between px-6 py-4 bg-white border-b-[3px] border-black sticky top-0 z-50">
-      <SyncedCurrentPlaying />
+      <SyncedCurrentPlaying enabled={showCurrentlyPlaying} />
       <div
         className="text-black font-black font-serif text-3xl uppercase tracking-tighter cursor-pointer hover:text-accent-red transition-colors"
         onClick={() => router.push("/")}

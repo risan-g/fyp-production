@@ -15,7 +15,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, is_private, username, avatar_url")
+    .select("id, is_private, username, avatar_url, show_currently_playing")
     .eq("id", user.id)
     .single();
 
@@ -40,6 +40,7 @@ export default async function SettingsPage() {
           isSpotifyLinked={isSpotifyLinked}
           initialSpotifyUsername={spotifyUsername}
           initialSpotifyEmail={spotifyEmail}
+          initialShowCurrentlyPlaying={profile?.show_currently_playing ?? true}
         />
       </div>
     </main>

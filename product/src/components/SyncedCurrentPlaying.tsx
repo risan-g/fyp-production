@@ -7,11 +7,13 @@ import { createClient } from "@/lib/supabase/client";
  * A headless component that runs in the NavBar. 
  * It periodically fetches Spotify playback status and "broadcasts" it to the Supabase database.
  */
-export default function SyncedCurrentPlaying() {
+export default function SyncedCurrentPlaying({ enabled = true }: { enabled?: boolean }) {
   const supabase = createClient();
   const lastTrackRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
+
     async function syncStatus() {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
@@ -48,7 +50,7 @@ export default function SyncedCurrentPlaying() {
     syncStatus();
 
     return () => clearInterval(timer);
-  }, [supabase]);
+  }, [supabase, enabled]);
 
   return null;
 }
