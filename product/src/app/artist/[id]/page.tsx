@@ -4,6 +4,7 @@ import { fetchSpotifyData } from "@/lib/spotify";
 import DiscographySection from "@/components/DiscographySection";
 import { createClient } from "@/lib/supabase/server";
 import RotationButton from "@/components/RotationButton";
+import WallSection from "@/components/wall/WallSection";
 
 const SCHOOLBOY_Q_ID = "5IcR3N7QB1j6KBL8eImZ8m";
 const MF_DOOM_ID = "2pAWfrd7WFF3XhVt9GooDL";
@@ -195,6 +196,11 @@ export default async function ArtistPage({
             easterEgg={isQ ? "q" : isDoom ? "doom" : undefined}
           />
         </div>
+
+        <WallSection
+          spotifyArtistId={id}
+          currentUserId={currentUser?.id}
+        />
       </div>
     </div>
   );

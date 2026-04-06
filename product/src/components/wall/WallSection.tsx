@@ -1,3 +1,4 @@
+import { createClient } from "@/lib/supabase/server";
 import CreatePostForm from "./CreatePostForm";
 import WallFeed from "./WallFeed";
 
@@ -5,8 +6,38 @@ import WallFeed from "./WallFeed";
  * Server Component that acts as the data-fetcher and wrapper for The Wall.
  */
 export default async function WallSection({ spotifyArtistId, currentUserId }: { spotifyArtistId: string, currentUserId?: string }) {
+  const supabase = await createClient();
 
-  const mockPosts: any[] = [];
+  // Get the wall ID if it exists.
+  const { data: wall } = await supabase
+    .from("walls")
+    .select("id")
+    .eq("spotify_artist_id", spotifyArtistId)
+    .single();
+
+  let postsData: any[] = [];
+
+  if (wall) {
+    // Fetch all posts with their profiles and votes in one query
+    const { data: posts } = await supabase
+      .from("posts")
+      .select(`
+        *,
+        profiles (username),
+        votes (vote_type, user_id)
+      `)
+      .eq("wall_id", wall.id)
+      .order("created_at", { ascending: false });
+
+    // Process to calculate Net dB scores and User Vote state
+    if (posts) {
+      postsData = posts.map((post: any) => {
+        const score = post.votes?.reduce((acc: number, v: any) => acc + v.vote_type, 0) || 0;
+        const userVote = post.votes?.find((v: any) => v.user_id === currentUserId)?.vote_type || 0;
+        return { ...post, score, userVote };
+      });
+    }
+  }
 
   return (
     <div className="mt-24 pt-12 border-t-[3px] border-black">
@@ -19,9 +50,8 @@ export default async function WallSection({ spotifyArtistId, currentUserId }: { 
 
       <CreatePostForm spotifyArtistId={spotifyArtistId} />
 
-      {/* The Feed */}
       <WallFeed
-        posts={mockPosts}
+        posts={postsData}
         currentUserId={currentUserId}
         spotifyArtistId={spotifyArtistId}
       />
