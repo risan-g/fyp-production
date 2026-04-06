@@ -4,7 +4,6 @@ import { fetchSpotifyData } from "@/lib/spotify";
 import DiscographySection from "@/components/DiscographySection";
 import { createClient } from "@/lib/supabase/server";
 import RotationButton from "@/components/RotationButton";
-import WallSection from "@/components/wall/WallSection";
 
 const SCHOOLBOY_Q_ID = "5IcR3N7QB1j6KBL8eImZ8m";
 const MF_DOOM_ID = "2pAWfrd7WFF3XhVt9GooDL";
@@ -145,6 +144,14 @@ export default async function ArtistPage({
           {isDoom ? artist.name : (isQ ? artist.name : artist.name)}
         </h1>
 
+        <Link
+          href={`/artist/${id}/wall`}
+          className="mt-6 font-mono font-bold text-sm tracking-[0.3em] uppercase text-black border-b-[2px] border-transparent hover:border-accent-red hover:text-accent-red transition-all"
+        >
+          [ WALL ]
+        </Link>
+
+
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           {artist.genres?.slice(0, 4).map((genre: string) => (
             <span
@@ -196,11 +203,6 @@ export default async function ArtistPage({
             easterEgg={isQ ? "q" : isDoom ? "doom" : undefined}
           />
         </div>
-
-        <WallSection
-          spotifyArtistId={id}
-          currentUserId={currentUser?.id}
-        />
       </div>
     </div>
   );
