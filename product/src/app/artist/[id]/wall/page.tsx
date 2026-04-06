@@ -85,7 +85,7 @@ export default async function WallPage({
       </div>
 
       <div className="max-w-4xl mx-auto px-6 mt-12 relative">
-        <CreatePostFab spotifyArtistId={id} />
+        <NewPostButton spotifyArtistId={id} />
 
         {/* The Community Feed */}
         <WallFeed

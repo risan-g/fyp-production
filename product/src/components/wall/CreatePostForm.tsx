@@ -6,7 +6,8 @@ import { createPost } from "@/app/actions/wall";
 /**
  * Form for starting new threads.
  */
-export default function CreatePostForm({ spotifyArtistId }: { spotifyArtistId: string }) {
+export default function CreatePostForm({ spotifyArtistId, onClose }: { spotifyArtistId: string, onClose?: () => void }) {
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
@@ -18,6 +19,7 @@ export default function CreatePostForm({ spotifyArtistId }: { spotifyArtistId: s
       await createPost(spotifyArtistId, title, content);
       setTitle("");
       setContent("");
+      if (onClose) onClose();
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -25,9 +27,20 @@ export default function CreatePostForm({ spotifyArtistId }: { spotifyArtistId: s
     }
   };
 
+
   return (
-    <form onSubmit={handleSubmit} className="border-[3px] border-black bg-white p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)] flex flex-col gap-4 mb-8">
+    <form onSubmit={handleSubmit} className="border-[3px] border-black bg-white p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)] flex flex-col gap-4 relative">
+      {onClose && (
+        <button 
+          type="button" 
+          onClick={onClose} 
+          className="absolute top-4 right-4 text-[10px] font-mono font-bold uppercase tracking-[0.2em] hover:text-accent-red"
+        >
+          [ X ]
+        </button>
+      )}
       <div className="border-b-[2px] border-black pb-2 mb-2 flex items-center gap-2">
+
         <span className="w-2 h-2 bg-accent-red flex-shrink-0"></span>
         <h3 className="text-black font-mono font-bold uppercase tracking-[0.2em] text-sm">"MAKE SOME NOISE"</h3>
       </div>
