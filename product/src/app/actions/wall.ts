@@ -112,20 +112,32 @@ export async function toggleVote(
   if (entityType === "post") query.eq("post_id", entityId);
   else query.eq("comment_id", entityId);
 
-  const { data: existingVote } = await query.single();
+  const { data: existingVote, error: selectError } = await query.maybeSingle();
+
+  if (selectError) throw selectError;
 
   if (existingVote) {
     if (existingVote.vote_type === voteValue) {
       // User clicked the exact same button they already pressed, then UNVOTE
-      await supabase.from("votes").delete().eq("id", existingVote.id);
+      const { error } = await supabase.from("votes").delete().eq("id", existingVote.id);
+      if (error) throw error;
     } else {
       // User changed from Loud to Quiet (or vice versa), then UPDATE
-      await supabase
-        .from("votes")
-        .update({ vote_type: voteValue })
-        .eq("id", existingVote.id);
+      const { error: delError } = await supabase.from("votes").delete().eq("id", existingVote.id);
+      if (delError) throw delError;
+
+      const insertData: any = {
+        user_id: user.id,
+        vote_type: voteValue,
+      };
+      if (entityType === "post") insertData.post_id = entityId;
+      else insertData.comment_id = entityId;
+
+      const { error: insError } = await supabase.from("votes").insert(insertData);
+      if (insError) throw insError;
     }
   } else {
+    // First time voting
     const insertData: any = {
       user_id: user.id,
       vote_type: voteValue,
@@ -133,7 +145,8 @@ export async function toggleVote(
     if (entityType === "post") insertData.post_id = entityId;
     else insertData.comment_id = entityId;
 
-    await supabase.from("votes").insert(insertData);
+    const { error } = await supabase.from("votes").insert(insertData);
+    if (error) throw error;
   }
 
   revalidatePath(`/artist/${spotifyArtistId}`);

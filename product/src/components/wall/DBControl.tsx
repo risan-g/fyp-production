@@ -25,45 +25,68 @@ export default function DBControl({
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const [currentScore, setCurrentScore] = useState(initialScore);
+  const [currentVote, setCurrentVote] = useState(initialUserVote);
+  const [isUpdating, setIsUpdating] = useState(false);
+
   const handleVote = async (value: 1 | -1) => {
-    if (loading) return;
-    setLoading(true);
+    if (isUpdating) return;
+
+    setIsUpdating(true);
+
+    // If the user clicks the same vote again, it's a toggle off (0)
+    // If they click a different vote, it swaps.
+    const newVote = currentVote === value ? 0 : value;
+
+    // Calculate Score Difference mathematically 
+    const scoreDiff = newVote - currentVote;
+
+    // Optimistic Update
+    setCurrentVote(newVote as 1 | -1 | 0);
+    setCurrentScore(prev => prev + scoreDiff);
+
+    // Background Database Update
     try {
       await toggleVote(entityId, entityType, value, spotifyArtistId);
     } catch (e: any) {
       if (e.message.includes("logged in")) {
         router.push("/sign-in");
+      } else {
+        // Revert on error
+        setCurrentVote(currentVote);
+        setCurrentScore(initialScore);
       }
     } finally {
-      setLoading(false);
+      setIsUpdating(false);
     }
   };
 
-  const isLoud = initialUserVote === 1;
-  const isQuiet = initialUserVote === -1;
+
+  const isLoud = currentVote === 1;
+  const isQuiet = currentVote === -1;
 
   // Colour logic
   let scoreColor = "text-black";
-  if (initialScore >= 10) scoreColor = "text-accent-red";
-  if (initialScore < 0) scoreColor = "text-black/40";
+  if (currentScore >= 10) scoreColor = "text-accent-red";
+  if (currentScore < 0) scoreColor = "text-black/40";
 
   return (
     <div className="flex flex-col items-center justify-center font-mono font-bold select-none border-[3px] border-black bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)] w-12 pt-1 pb-1">
       <button
         onClick={() => handleVote(1)}
-        disabled={loading}
+        disabled={isUpdating}
         className={`w-full py-1 transition-all ${isLoud ? "bg-black text-white" : "hover:bg-neutral-200 text-black"}`}
       >
         [+]
       </button>
 
       <span className={`py-2 text-[10px] tracking-widest text-center w-full border-y-[2px] border-black/10 ${scoreColor}`}>
-        {initialScore}dB
+        {currentScore}dB
       </span>
 
       <button
         onClick={() => handleVote(-1)}
-        disabled={loading}
+        disabled={isUpdating}
         className={`w-full py-1 transition-all ${isQuiet ? "bg-black text-white" : "hover:bg-neutral-200 text-black"}`}
       >
         [-]
