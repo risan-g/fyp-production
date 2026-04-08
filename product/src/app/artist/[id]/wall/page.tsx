@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fetchSpotifyData } from "@/lib/spotify";
-import CreatePostFab from "@/components/wall/CreatePostFab";
+import NewPostButton from "@/components/wall/NewPostButton";
 import WallFeed from "@/components/wall/WallFeed";
 
 
