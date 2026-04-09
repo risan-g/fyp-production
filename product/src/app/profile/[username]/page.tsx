@@ -6,6 +6,8 @@ import SyncButton from "@/components/SyncButton";
 import ProfileStats from "@/components/ProfileStats";
 import CurrentlyPlaying from "@/components/CurrentlyPlaying";
 import { getPublishedPlaylists } from "@/app/actions/playlists";
+import { getCachedTopArtists } from "@/app/actions/spotify-stats";
+import TopArtistsRow from "@/components/spotify/TopArtistsRow";
 
 /**
  * Format dates into a readable string.
@@ -20,8 +22,7 @@ const formatDate = (dateString: string) => {
 /**
  * ProfilePage (Server Component)
  *
- * Displays a public user profile, including their bio, avatar,
- * social connections (Syncs), and content history.
+ * Displays a public user profile.
  */
 export default async function ProfilePage({
   params,
@@ -68,6 +69,7 @@ export default async function ProfilePage({
     topRatingsData,
     recentReviewsData,
     publishedPlaylistsData,
+    cachedTopArtistsData,
   ] = await Promise.all([
     supabase.rpc("get_sync_count", { target_user_id: profile.id }),
 
@@ -133,6 +135,9 @@ export default async function ProfilePage({
 
     // Get published playlists
     getPublishedPlaylists(profile.id),
+
+    // Get cached top artists
+    getCachedTopArtists(profile.id),
   ]);
 
   /**
@@ -154,6 +159,14 @@ export default async function ProfilePage({
   const topRatings = topRatingsData.data || [];
   const recentReviews = recentReviewsData.data || [];
   const publishedPlaylists = publishedPlaylistsData || [];
+  const cachedTopArtists = cachedTopArtistsData || [];
+
+  // Check if the profile owner has Spotify linked (only relevant for own profile refresh)
+  let isSpotifyLinked = false;
+  if (isOwnProfile) {
+    const { data: identitiesData } = await supabase.auth.getUserIdentities();
+    isSpotifyLinked = !!identitiesData?.identities?.find((id: any) => id.provider === "spotify");
+  }
 
   return (
     <div className="bg-white text-black min-h-screen p-8">
@@ -253,6 +266,13 @@ export default async function ProfilePage({
           </div>
         ) : (
           <>
+            {/* Currently Rotating - Top Artists from Spotify */}
+            <TopArtistsRow
+              initialArtists={cachedTopArtists}
+              isOwnProfile={isOwnProfile}
+              isSpotifyLinked={isSpotifyLinked}
+            />
+
             {/* Top Rated Albums Grid */}
             <div className="mt-16 w-full">
               <div className="flex items-end justify-between border-b-[3px] border-black pb-4 mb-8">
