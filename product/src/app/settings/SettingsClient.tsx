@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import AvatarUpload from "@/components/Avatar-Upload";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import PlaylistGrid from "@/components/spotify/PlaylistGrid";
 
 interface SettingsClientProps {
   userId: string;
@@ -790,6 +791,10 @@ export default function SettingsClient({
                     />
                   </button>
                 </div>
+              )}
+              
+              {spotifyLinked && (
+                <PlaylistGrid userId={userId} />
               )}
             </div>
           </div>
