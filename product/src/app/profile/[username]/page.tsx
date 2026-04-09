@@ -5,6 +5,7 @@ import AvatarUpload from "@/components/Avatar-Upload";
 import SyncButton from "@/components/SyncButton";
 import ProfileStats from "@/components/ProfileStats";
 import CurrentlyPlaying from "@/components/CurrentlyPlaying";
+import { getPublishedPlaylists } from "@/app/actions/playlists";
 
 /**
  * Format dates into a readable string.
@@ -66,6 +67,7 @@ export default async function ProfilePage({
     reviewsCountData,
     topRatingsData,
     recentReviewsData,
+    publishedPlaylistsData,
   ] = await Promise.all([
     supabase.rpc("get_sync_count", { target_user_id: profile.id }),
 
@@ -128,6 +130,9 @@ export default async function ProfilePage({
       .neq("content", "")
       .order("created_at", { ascending: false })
       .limit(3),
+
+    // Get published playlists
+    getPublishedPlaylists(profile.id),
   ]);
 
   /**
@@ -148,6 +153,7 @@ export default async function ProfilePage({
   const reviewsCount = reviewsCountData.count || 0;
   const topRatings = topRatingsData.data || [];
   const recentReviews = recentReviewsData.data || [];
+  const publishedPlaylists = publishedPlaylistsData || [];
 
   return (
     <div className="bg-white text-black min-h-screen p-8">
@@ -316,6 +322,51 @@ export default async function ProfilePage({
                 </div>
               )}
             </div>
+
+            {/* Published Playlists */}
+            {publishedPlaylists.length > 0 && (
+              <div className="mt-20 w-full">
+                <div className="flex items-end justify-between border-b-[3px] border-black pb-4 mb-8">
+                  <h2 className="text-sm text-black font-mono font-bold uppercase tracking-[0.2em] flex items-center gap-2">
+                    <span className="w-2 h-2 bg-[#1DB954] flex-shrink-0"></span>
+                    "PLAYLISTS"
+                  </h2>
+                  <div className="text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em] px-2 py-1 border-[2px] border-black bg-white shadow-[2px_2px_0px_#1DB954]">
+                    {publishedPlaylists.length} / 4
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {publishedPlaylists.map(playlist => (
+                    <a
+                      key={playlist.id}
+                      href={`https://open.spotify.com/playlist/${playlist.spotify_playlist_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex bg-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
+                    >
+                      {/* Image */}
+                      <div className="w-28 h-28 shrink-0 bg-neutral-200 border-r-[3px] border-black relative overflow-hidden">
+                        {playlist.image_url ? (
+                          <img src={playlist.image_url} alt={playlist.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 delay-75" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs font-mono">NO IMG</div>
+                        )}
+                        <div className="absolute top-2 left-2 bg-[#1DB954] text-black text-[8px] font-black tracking-widest px-1 py-0.5 border-[2px] border-black"></div>
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex flex-col justify-center p-4 flex-grow overflow-hidden">
+                        <h5 className="font-black font-serif text-xl uppercase truncate leading-none mb-2 group-hover:text-[#1DB954] transition-colors">{playlist.name}</h5>
+                        <p className="font-mono text-[10px] text-black/60 uppercase tracking-widest font-bold">
+                          {playlist.tracks_total} TRACKS
+                        </p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Recent Reviews List */}
             <div className="mt-20">
