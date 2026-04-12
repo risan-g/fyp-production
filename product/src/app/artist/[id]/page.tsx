@@ -141,14 +141,14 @@ export default async function ArtistPage({
 
       <div className="flex flex-col items-center text-center px-4 mt-12 max-w-6xl mx-auto">
         <h1 className={`text-7xl md:text-9xl font-serif font-black tracking-tighter text-black leading-none bg-white px-8 py-4 border-[3px] border-black shadow-[16px_16px_0px_rgba(0,0,0,1)] -mt-32 relative z-10 ${hasEasterEgg ? "" : "uppercase"}`}>
-          {isDoom ? artist.name : (isQ ? artist.name : artist.name)}
+          {artist.name}
         </h1>
 
         <Link
           href={`/artist/${id}/wall`}
-          className="mt-6 font-mono font-bold text-sm tracking-[0.3em] uppercase text-black border-b-[2px] border-transparent hover:border-accent-red hover:text-accent-red transition-all"
+          className={`mt-6 font-mono font-bold text-sm tracking-[0.3em] text-black border-b-[2px] border-transparent hover:border-accent-red hover:text-accent-red transition-all ${hasEasterEgg ? "" : "uppercase"}`}
         >
-          [ WALL ]
+          {formatText("[ WALL ]")}
         </Link>
 
 
