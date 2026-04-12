@@ -28,7 +28,11 @@ export default function SignInPage() {
       router.push("/");
       router.refresh();
     } catch (err: any) {
-      setError("Invalid email or password.");
+      if (err.message === "Email not confirmed") {
+        setError("PLEASE CONFIRM YOUR EMAIL ADDRESS TO SIGN IN.");
+      } else {
+        setError("Invalid email or password.");
+      }
     } finally {
       setLoading(false);
     }
