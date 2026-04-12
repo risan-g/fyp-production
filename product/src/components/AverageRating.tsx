@@ -84,7 +84,7 @@ export default function AverageRating({ albumId }: AverageRatingProps) {
           }
           return (
             <span
-              className="font-black font-sans tracking-tighter text-black leading-none drop-shadow-md group-hover:text-accent-red transition-colors"
+              className="font-black font-sans tracking-tighter text-black leading-none drop-shadow-md"
               style={{ fontSize: "110px" }}
             >
               {averageRating}
