@@ -3,7 +3,6 @@ import Link from "next/link";
 import HomeFeedClient from "@/components/home/HomeFeedClient";
 import HottestAlbums from "@/components/home/HottestAlbums";
 import SuggestedSyncs from "@/components/home/SuggestedSyncs";
-import LogAlbumButton from "@/components/home/LogAlbumButton";
 export const dynamic = "force-dynamic";
 
 /**
@@ -65,13 +64,6 @@ export default async function Home() {
   return (
     <div className="bg-background text-foreground min-h-screen font-sans selection:bg-accent-red selection:text-white">
       <div className="relative border-b-[3px] border-black bg-white pt-24 pb-20 px-6 overflow-hidden">
-        <div className="absolute top-8 left-8 text-xs font-mono font-bold tracking-[0.2em] opacity-40">
-          "ISSUE 01"
-        </div>
-        <div className="absolute top-8 right-8 text-xs font-mono font-bold tracking-[0.2em] opacity-40">
-          <span className="text-accent-red">REC.</span> 2026
-        </div>
-
         <div className="relative z-10 max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
 
           <div className="flex flex-col items-start text-left">
@@ -90,8 +82,6 @@ export default async function Home() {
             </p>
 
             <div className="flex flex-wrap gap-6 w-full">
-              <LogAlbumButton />
-
               {username ? (
                 <Link
                   href={`/profile/${username}`}

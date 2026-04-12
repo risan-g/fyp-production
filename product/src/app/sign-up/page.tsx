@@ -212,7 +212,7 @@ export default function SignUpPage() {
               disabled={loading || usernameStatus === "taken"}
               className="w-full py-4 bg-black text-white font-mono font-bold uppercase tracking-[0.2em] text-sm border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-accent-red hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
-              {loading ? "Creating Account..." : "Sign Up →"}
+              {loading ? "Creating Account..." : "Sign Up"}
             </button>
           </form>
 
