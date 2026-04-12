@@ -152,11 +152,11 @@ export default async function Home() {
       <div className="max-w-[1400px] mx-auto p-6 md:p-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 relative items-start">
 
-          <div className="lg:col-span-8 flex flex-col gap-8">
+          <div className="lg:col-span-8 flex flex-col gap-8 order-2 lg:order-1">
             <HomeFeedClient user={user} />
           </div>
 
-          <div className="lg:col-span-4 sticky top-8 flex flex-col gap-10">
+          <div className="lg:col-span-4 lg:sticky top-8 flex flex-col gap-10 order-1 lg:order-2">
             <HottestAlbums />
             <SuggestedSyncs userId={user?.id} />
           </div>

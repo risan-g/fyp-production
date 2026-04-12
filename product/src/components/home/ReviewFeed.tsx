@@ -194,8 +194,13 @@ export default function ReviewFeed({ feedType, optimisticReview, user }: ReviewF
 
     if (reviews.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-32 text-center border-[3px] border-black bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)]">
-                <p className="text-black font-bold font-mono uppercase tracking-[0.2em]">"NO ACTIVITY YET"</p>
+            <div className="flex flex-col items-center justify-center py-40 text-center border-[3px] border-black bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)] px-8">
+                <p className="text-black font-black font-mono uppercase tracking-[0.2em] mb-4">"NO ACTIVITY YET"</p>
+                <p className="text-black/50 font-mono text-xs uppercase tracking-widest max-w-[300px]">
+                    {feedType === "synced" 
+                        ? "SYNC WITH OTHER USERS TO SEE THEIR REVIEWS AND RATINGS POPULATE YOUR FEED." 
+                        : "BE THE FIRST TO LOG AN ALBUM AND START THE CONVERSATION."}
+                </p>
             </div>
         );
     }

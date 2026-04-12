@@ -39,10 +39,10 @@ export default async function SuggestedSyncs({ userId }: { userId?: string }) {
     // If they haven't added any artists, we just return a generic empty state for now
     if (!myArtists || myArtists.length === 0) {
         return (
-            <div className="border-[3px] border-black bg-white p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)] flex flex-col min-h-[250px]">
-                <h3 className="font-mono text-sm uppercase tracking-widest text-black mb-4 pb-4 border-b-[3px] border-black font-bold">"SUGGESTED SYNCS"</h3>
-                <div className="flex-1 flex flex-col items-center justify-center text-center gap-3">
-                    <p className="text-black/60 text-xs font-mono uppercase tracking-widest">Add artists to get syncs.</p>
+            <div className="border-[3px] border-black bg-white p-8 shadow-[8px_8px_0px_rgba(0,0,0,1)] flex flex-col min-h-[300px]">
+                <h3 className="font-mono text-sm uppercase tracking-widest text-black mb-6 pb-4 border-b-[3px] border-black font-bold">"SUGGESTED SYNCS"</h3>
+                <div className="flex-1 flex flex-col items-center justify-center text-center gap-6">
+                    <p className="text-black font-black font-mono uppercase tracking-[0.1em] text-sm leading-relaxed max-w-[200px]">NO SUGGESTIONS YET. ADD ARTISTS TO YOUR ROTATION TO FIND YOUR TASTE MATCHES.</p>
                 </div>
             </div>
         );
@@ -108,7 +108,7 @@ export default async function SuggestedSyncs({ userId }: { userId?: string }) {
     const idsToFetch = topMatches.map(m => m[0]);
     const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url")
+        .select("id, username, avatar_url, is_private")
         .in("id", idsToFetch);
 
     // We also need to check if these recommended users follow me (for SyncButton state)
@@ -166,7 +166,9 @@ export default async function SuggestedSyncs({ userId }: { userId?: string }) {
                             <div className="shrink-0 scale-90 origin-right">
                                 <SyncButton
                                     targetUserId={profile.id}
+                                    isPrivate={profile.is_private}
                                     initialIsFollowing={false} // By definition of recommendations, we don't follow them yet
+                                    initialIsPending={false} // By definition, we haven't requested yet either
                                     isTargetFollowingMe={profile.is_following_me}
                                 />
                             </div>
