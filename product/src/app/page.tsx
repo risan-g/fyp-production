@@ -69,7 +69,7 @@ export default async function Home() {
           <div className="flex flex-col items-start text-left">
             <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter mb-8 text-black uppercase font-serif leading-none" style={{ fontVariantLigatures: 'none' }}>
               {username ? (
-                <span className="block border-b-8 border-accent-red pb-4">{username}</span>
+                <span className="block border-b-8 border-accent-red pb-4">HI, {username}</span>
               ) : (
                 "THE SYNCED"
               )}
