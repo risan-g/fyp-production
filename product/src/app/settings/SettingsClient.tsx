@@ -148,7 +148,32 @@ export default function SettingsClient({
    * Update Username Handle
    */
   const handleUsernameSave = async () => {
-    // ... existing username save ...
+    if (usernameInput === initialUsername) {
+      showToast("NO CHANGES DETECTED.", "error");
+      return;
+    }
+
+    setIsUsernameLoading(true);
+
+    try {
+      const result = await updateUsername(usernameInput);
+
+      if (result.error) {
+        showToast(result.error, "error");
+        return;
+      }
+
+      if (result.success && result.newHandle) {
+        showToast("USERNAME UPDATED SUCCESSFULLY.", "success");
+        // Instantly route them to their new shiny URL!
+        router.push(`/profile/${result.newHandle}`);
+      }
+    } catch (error) {
+      console.error("Save failed:", error);
+      showToast("AN UNEXPECTED ERROR OCCURRED.", "error");
+    } finally {
+      setIsUsernameLoading(false);
+    }
   };
 
   /**
