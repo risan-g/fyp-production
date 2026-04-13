@@ -1,5 +1,6 @@
 import DBControl from "./DBControl";
 import Link from "next/link";
+import FormattedText from "./FormattedText";
 
 /**
  * preview of a submission.
@@ -28,11 +29,26 @@ export default function PostCard({ post, currentUserId, spotifyArtistId }: { pos
 
         {/* User & Time */}
         <div className="flex items-center gap-3 mb-2 text-[10px] font-mono tracking-widest uppercase text-black/50 border-b-[2px] border-black/10 pb-2 relative z-20">
-          <object>
-            <Link href={`/profile/${post.profiles?.username}`} className="font-bold text-black border-b-[2px] border-transparent hover:border-black transition-all">
-              {post.profiles?.username || "UNKNOWN"}
-            </Link>
-          </object>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-white border-[2px] border-black flex items-center justify-center overflow-hidden shrink-0">
+              {post.profiles?.avatar_url ? (
+                <img
+                  src={post.profiles.avatar_url}
+                  alt={post.profiles.username}
+                  className="w-full h-full object-cover grayscale"
+                />
+              ) : (
+                <span className="text-[8px] font-bold text-black">
+                  {post.profiles?.username?.[0]?.toUpperCase() || "?"}
+                </span>
+              )}
+            </div>
+            <object>
+              <Link href={`/profile/${post.profiles?.username}`} className="font-bold text-black border-b-[2px] border-transparent hover:border-black transition-all">
+                {post.profiles?.username || "UNKNOWN"}
+              </Link>
+            </object>
+          </div>
           <span className="w-1 h-1 bg-black/30"></span>
           <span suppressHydrationWarning>{new Date(post.created_at).toLocaleDateString()}</span>
         </div>
@@ -44,7 +60,7 @@ export default function PostCard({ post, currentUserId, spotifyArtistId }: { pos
 
         {/* Content Preview */}
         <p className="font-serif text-lg leading-relaxed text-black line-clamp-3 bg-neutral-50 p-4 border-[2px] border-black group-hover/card:bg-white transition-colors">
-          {post.content}
+          <FormattedText text={post.content} />
         </p>
 
         {/* Thread link */}

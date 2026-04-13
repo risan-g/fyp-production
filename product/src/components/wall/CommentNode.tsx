@@ -2,21 +2,26 @@
 
 import { useState } from "react";
 import DBControl from "./DBControl";
-import { createComment } from "@/app/actions/wall";
+import { createComment, voidComment } from "@/app/actions/wall";
+import ConfirmModal from "@/components/ConfirmModal";
+import FormattedText from "./FormattedText";
 
 interface CommentNodeProps {
   comment: any;
   spotifyArtistId: string;
+  currentUserId?: string;
   depth?: number;
 }
 
 /**
  * RECURSIVE COMMENT COMPONENT
  */
-export default function CommentNode({ comment, spotifyArtistId, depth = 0 }: CommentNodeProps) {
+export default function CommentNode({ comment, spotifyArtistId, currentUserId, depth = 0 }: CommentNodeProps) {
   const [isReplying, setIsReplying] = useState(false);
   const [replyContent, setReplyContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVoiding, setIsVoiding] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleReply = async () => {
     if (!replyContent.trim()) return;
@@ -64,6 +69,19 @@ export default function CommentNode({ comment, spotifyArtistId, depth = 0 }: Com
             >
               {isCollapsed ? "[+]" : "[-]"}
             </button>
+            <div className="w-5 h-5 bg-white border-[2px] border-black flex items-center justify-center overflow-hidden shrink-0">
+              {comment.profiles?.avatar_url ? (
+                <img
+                  src={comment.profiles.avatar_url}
+                  alt={comment.profiles.username}
+                  className="w-full h-full object-cover grayscale"
+                />
+              ) : (
+                <span className="text-[8px] font-bold text-black">
+                  {comment.profiles?.username?.[0]?.toUpperCase() || "?"}
+                </span>
+              )}
+            </div>
             <span className="text-black">{comment.profiles?.username || "UNKNOWN"}</span>
             <span>•</span>
             <span suppressHydrationWarning>{new Date(comment.created_at).toLocaleDateString()}</span>
@@ -77,17 +95,47 @@ export default function CommentNode({ comment, spotifyArtistId, depth = 0 }: Com
             <>
               {/* Content */}
               <div className={`font-serif text-base leading-relaxed p-3 border-[2px] border-black bg-neutral-50 shadow-[2px_2px_0px_rgba(0,0,0,1)] ${comment.is_voided ? "italic text-black/40 bg-neutral-100 border-dashed" : "text-black"}`}>
-                {comment.content}
+                <FormattedText text={comment.content} />
               </div>
 
               {/* Actions */}
               {!comment.is_voided && (
-                <button
-                  onClick={() => setIsReplying(!isReplying)}
-                  className="mt-2 text-[9px] font-mono font-bold uppercase tracking-[0.2em] border-b-[2px] border-transparent hover:border-black transition-all"
-                >
-                  {isReplying ? "[ CLOSE ]" : "[ REPLY ]"}
-                </button>
+                <div className="mt-2 flex items-center gap-3">
+                  <button
+                    onClick={() => setIsReplying(!isReplying)}
+                    className="text-[9px] font-mono font-bold uppercase tracking-[0.2em] border-b-[2px] border-transparent hover:border-black transition-all"
+                  >
+                    {isReplying ? "[ CLOSE ]" : "[ REPLY ]"}
+                  </button>
+
+                  {currentUserId === comment.user_id && (
+                    <button
+                      onClick={() => setShowConfirm(true)}
+                      disabled={isVoiding}
+                      className="text-[9px] font-mono font-bold uppercase tracking-[0.2em] text-accent-red border-b-[2px] border-transparent hover:border-accent-red transition-all disabled:opacity-50"
+                    >
+                      {isVoiding ? "VOIDING..." : "[ DELETE ]"}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {showConfirm && (
+                <ConfirmModal
+                  message="VOID THIS COMMENT?"
+                  onConfirm={async () => {
+                    setShowConfirm(false);
+                    setIsVoiding(true);
+                    try {
+                      await voidComment(comment.id, spotifyArtistId);
+                    } catch (err: any) {
+                      alert(err.message || "Failed to void comment.");
+                    } finally {
+                      setIsVoiding(false);
+                    }
+                  }}
+                  onCancel={() => setShowConfirm(false)}
+                />
               )}
 
               {/* Reply Form */}
@@ -96,7 +144,7 @@ export default function CommentNode({ comment, spotifyArtistId, depth = 0 }: Com
                   <textarea
                     value={replyContent}
                     onChange={(e) => setReplyContent(e.target.value)}
-                    placeholder="REPLY TO THIS NOISE..."
+                    placeholder="REPLY..."
                     className="w-full bg-white border-[3px] border-black p-4 font-serif text-sm focus:outline-none min-h-[80px] placeholder:text-black/20 placeholder:uppercase"
                   />
                   <div className="flex justify-end">
@@ -119,10 +167,11 @@ export default function CommentNode({ comment, spotifyArtistId, depth = 0 }: Com
       {!isCollapsed && comment.children && comment.children.length > 0 && (
         <div className="flex flex-col">
           {comment.children.map((child: any) => (
-            <CommentNode
+          <CommentNode
               key={child.id}
               comment={child}
               spotifyArtistId={spotifyArtistId}
+              currentUserId={currentUserId}
               depth={depth + 1}
             />
           ))}
