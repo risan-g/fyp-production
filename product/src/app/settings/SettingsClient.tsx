@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updatePrivacy, updateUsername, deleteAccount, changePassword, updateSpotifyVisibility } from "@/app/actions/settings";
+import { updatePrivacy, updateUsername, deleteAccount, changePassword, updateSpotifyVisibility, updateBio } from "@/app/actions/settings";
 import { AnimatePresence, motion } from "framer-motion";
 import AvatarUpload from "@/components/Avatar-Upload";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -18,6 +18,7 @@ interface SettingsClientProps {
   initialSpotifyUsername: string | null;
   initialSpotifyEmail: string | null;
   initialShowCurrentlyPlaying: boolean;
+  initialBio: string;
 }
 
 type TabState = "ACCOUNT" | "SECURITY" | "PRIVACY" | "INTEGRATION" | "PREFERENCES";
@@ -32,6 +33,7 @@ export default function SettingsClient({
   initialSpotifyUsername,
   initialSpotifyEmail,
   initialShowCurrentlyPlaying,
+  initialBio,
 }: SettingsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -47,6 +49,10 @@ export default function SettingsClient({
   // Username State
   const [usernameInput, setUsernameInput] = useState(initialUsername);
   const [isUsernameLoading, setIsUsernameLoading] = useState(false);
+  
+  // Bio State
+  const [bioInput, setBioInput] = useState(initialBio);
+  const [isBioLoading, setIsBioLoading] = useState(false);
 
   // Email State
   const [emailInput, setEmailInput] = useState("");
@@ -142,31 +148,33 @@ export default function SettingsClient({
    * Update Username Handle
    */
   const handleUsernameSave = async () => {
-    if (usernameInput === initialUsername) {
+    // ... existing username save ...
+  };
+
+  /**
+   * Update User Bio
+   */
+  const handleBioSave = async () => {
+    if (bioInput === initialBio) {
       showToast("NO CHANGES DETECTED.", "error");
       return;
     }
 
-    setIsUsernameLoading(true);
+    if (bioInput.length > 150) {
+      showToast("BIO CANNOT EXCEED 150 CHARACTERS.", "error");
+      return;
+    }
+
+    setIsBioLoading(true);
 
     try {
-      const result = await updateUsername(usernameInput);
-
-      if (result.error) {
-        showToast(result.error, "error");
-        return;
-      }
-
-      if (result.success && result.newHandle) {
-        showToast("USERNAME UPDATED SUCCESSFULLY.", "success");
-        // Instantly route them to their new shiny URL!
-        router.push(`/profile/${result.newHandle}`);
-      }
+      await updateBio(bioInput);
+      showToast("BIO UPDATED SUCCESSFULLY.", "success");
     } catch (error) {
       console.error("Save failed:", error);
-      showToast("AN UNEXPECTED ERROR OCCURRED.", "error");
+      showToast("FAILED TO SAVE BIO.", "error");
     } finally {
-      setIsUsernameLoading(false);
+      setIsBioLoading(false);
     }
   };
 
@@ -420,7 +428,7 @@ export default function SettingsClient({
             </div>
 
             {/* Username Row */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 mb-12">
               <div className="flex relative items-stretch">
                 <div className="bg-neutral-100 border-[3px] border-black border-r-0 flex items-center justify-center px-4 font-mono font-bold text-black/40">
                   @
@@ -445,6 +453,49 @@ export default function SettingsClient({
                     className="bg-accent-red text-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] font-mono font-bold uppercase tracking-[0.2em] text-xs p-4 flex items-center justify-center transition-all w-fit"
                   >
                     {isUsernameLoading ? "..." : "SAVE HANDLE"}
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Bio Row */}
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-mono font-bold text-black/40 uppercase tracking-widest ml-2">BIO</span>
+                <textarea
+                  value={bioInput}
+                  onChange={(e) => setBioInput(e.target.value)}
+                  placeholder="ADD A BIO..."
+                  maxLength={150}
+                  className="w-full bg-white border-[3px] border-black p-4 font-mono text-sm font-bold uppercase focus:outline-none focus:bg-yellow-50 transition-colors h-32 resize-none"
+                />
+                <div className="flex justify-between items-center px-2 mt-1">
+                  <span className={`text-[9px] font-mono font-bold uppercase tracking-widest ${bioInput.length >= 140 ? "text-accent-red" : "text-black/30"}`}>
+                    {bioInput.length} / 150
+                  </span>
+                  
+                  {bioInput.length > 0 && (
+                    <button
+                      onClick={() => setBioInput("")}
+                      className="text-[9px] font-mono font-black text-accent-red hover:text-red-700 uppercase tracking-widest transition-colors"
+                    >
+                      [ CLEAR ]
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <AnimatePresence>
+                {bioInput !== initialBio && (
+                  <motion.button
+                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                    animate={{ opacity: 1, height: "auto", marginTop: 8 }}
+                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                    onClick={handleBioSave}
+                    disabled={isBioLoading}
+                    className="bg-black text-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] font-mono font-bold uppercase tracking-[0.2em] text-xs py-3 px-6 w-fit transition-all flex items-center"
+                  >
+                    {isBioLoading ? "..." : "SAVE BIO"}
                   </motion.button>
                 )}
               </AnimatePresence>

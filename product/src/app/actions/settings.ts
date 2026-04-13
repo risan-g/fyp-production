@@ -168,3 +168,28 @@ export async function updateSpotifyVisibility(show: boolean) {
   revalidatePath("/settings");
   revalidatePath("/profile");
 }
+/**
+ * Update Bio
+ */
+export async function updateBio(bio: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) throw new Error("Not authenticated");
+
+  // Character limit check 
+  if (bio.length > 150) throw new Error("BIO CANNOT EXCEED 150 CHARACTERS.");
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ bio: bio })
+    .eq("id", user.id);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/settings");
+  revalidatePath("/profile");
+}
