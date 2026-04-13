@@ -8,6 +8,8 @@ import CurrentlyPlaying from "@/components/CurrentlyPlaying";
 import { getPublishedPlaylists } from "@/app/actions/playlists";
 import { getCachedTopArtists } from "@/app/actions/spotify-stats";
 import TopArtistsRow from "@/components/spotify/TopArtistsRow";
+import ShareButton from "@/components/ShareButton";
+import { Metadata } from "next";
 
 /**
  * Format dates into a readable string.
@@ -18,6 +20,44 @@ const formatDate = (dateString: string) => {
     year: "numeric",
   });
 };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username: rawUsername } = await params;
+  const username = decodeURIComponent(rawUsername);
+  const supabase = await createClient();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username, avatar_url, bio")
+    .ilike("username", username)
+    .single();
+
+  if (!profile) return { title: "PROFILE NOT FOUND | DOTWV" };
+
+  const title = `${profile.username.toUpperCase()} | DOTWV ARCHIVE`;
+  const description = profile.bio || `Explore ${profile.username}'s archived music and rotation on DotWV.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: profile.avatar_url ? [{ url: profile.avatar_url }] : [],
+      type: "profile",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: profile.avatar_url ? [profile.avatar_url] : [],
+    },
+  };
+}
 
 /**
  * ProfilePage (Server Component)
@@ -46,7 +86,7 @@ export default async function ProfilePage({
    */
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("id, username, created_at, avatar_url, is_private, show_currently_playing")
+    .select("id, username, created_at, avatar_url, is_private, show_currently_playing, bio")
     .ilike("username", username)
     .single();
 
@@ -173,32 +213,15 @@ export default async function ProfilePage({
       <div className="max-w-4xl mx-auto pt-24 relative">
         {/* Profile Header Section */}
         <div className="flex flex-col items-center text-center pb-12 border-b-[3px] border-black">
-          {/* 
-              Visibility Rules:
-              - Owner: Always see.
-              - Public Account: Viewers see if they have Requested (Pending) OR are Accepted Syncs.
-              - Private Account: Viewers see ONLY if they are Accepted Syncs.
-          */}
-          {(isOwnProfile ||
-            (!profile.is_private && (isFollowing || isPending)) ||
-            (profile.is_private && isFollowing)) && (
-              <div className="w-full mt-4">
-                <CurrentlyPlaying
-                  targetUserId={profile.id}
-                  isOwnProfile={isOwnProfile}
-                  showCurrentlyPlaying={profile.show_currently_playing ?? true}
-                />
-              </div>
-            )}
 
-          {/* Privacy Status Badge */}
+          {/* Privacy Status Badge*/}
           {isOwnProfile && (
-            <div className={`mb-6 inline-flex items-center gap-2 px-4 py-2 border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] text-xs font-mono font-bold tracking-[0.2em] ${profile.is_private ? "bg-accent-red text-white" : "bg-white text-black"}`}>
+            <div className={`mb-8 inline-flex items-center gap-2 px-4 py-2 border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] text-xs font-mono font-bold tracking-[0.2em] ${profile.is_private ? "bg-accent-red text-white" : "bg-white text-black"}`}>
               <span>{profile.is_private ? "<-> PRIVATE <->" : "<o> PUBLIC <o>"}</span>
             </div>
           )}
 
-          {/* Avatar Component */}
+          {/* Avatar */}
           <div className="mb-6">
             <AvatarUpload
               uid={profile.id}
@@ -209,22 +232,41 @@ export default async function ProfilePage({
             />
           </div>
 
-          <h1 className="text-6xl md:text-8xl font-serif font-black mb-2 tracking-tighter text-black uppercase">
+          {/* Username*/}
+          <h1 className="text-6xl md:text-8xl font-serif font-black mb-1 tracking-tighter text-black uppercase">
             {profile.username}
           </h1>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
-            <div className="inline-flex items-center gap-2 px-4 py-2 border-[3px] border-black bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)] text-black text-[10px] font-mono font-bold uppercase tracking-[0.2em]">
-              <span>EST. {formatDate(profile.created_at)}</span>
-            </div>
+          {/* EST date & Share Link */}
+          <div className="flex items-center gap-4 mb-4">
+            <p className="text-[10px] text-black/40 font-mono font-bold uppercase tracking-[0.2em]">
+              EST. {formatDate(profile.created_at)}
+            </p>
+            <ShareButton username={profile.username} />
           </div>
 
-          {/* 
-             - If Visitor (Logged In): Show "Sync Button" with 4-state logic.
-             - If Owner: Show spacer (or Edit Profile in future).
-          */}
-          {!isOwnProfile && currentUser ? (
-            <div className="mb-8">
+          {profile.bio && (
+            <p className="font-mono text-[13px] text-accent-red font-bold uppercase tracking-tight leading-relaxed max-w-sm mb-8">
+              {profile.bio}
+            </p>
+          )}
+
+          {/* Currently Playing ON SPOTIFY*/}
+          {((isOwnProfile && isSpotifyLinked) ||
+            (!isOwnProfile && (!profile.is_private && (isFollowing || isPending))) ||
+            (!isOwnProfile && (profile.is_private && isFollowing))) && (
+              <div className="w-full max-w-md mb-6">
+                <CurrentlyPlaying
+                  targetUserId={profile.id}
+                  isOwnProfile={isOwnProfile}
+                  showCurrentlyPlaying={profile.show_currently_playing ?? true}
+                />
+              </div>
+            )}
+
+          {/* Sync Button*/}
+          {!isOwnProfile && currentUser && (
+            <div className="mb-12">
               <SyncButton
                 targetUserId={profile.id}
                 isPrivate={profile.is_private}
@@ -233,25 +275,29 @@ export default async function ProfilePage({
                 isTargetFollowingMe={isFollower}
               />
             </div>
-          ) : isOwnProfile ? (
-            <div className="mb-8 h-8"></div>
-          ) : null}
+          )}
 
-          <ProfileStats
-            userId={profile.id}
-            syncCount={syncCount}
-            rotationCount={rotationCount}
-          />
+          <div className="w-full max-w-lg mx-auto flex flex-col gap-4">
+            {/* Syncs & Rotation*/}
+            <div className="border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] bg-white">
+              <ProfileStats
+                userId={profile.id}
+                syncCount={syncCount}
+                rotationCount={rotationCount}
+              />
+            </div>
 
-          {/* Ratings/Reviews */}
-          <div className="flex gap-12 mt-8 text-xs font-mono uppercase tracking-[0.2em] text-black/60 font-bold border-[3px] border-black p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)] bg-white">
-            <span className="flex flex-col items-center">
-              <strong className="text-black text-2xl font-black">{ratingsCount}</strong> RATINGS
-            </span>
-            <div className="w-[3px] bg-black"></div>
-            <span className="flex flex-col items-center">
-              <strong className="text-black text-2xl font-black">{reviewsCount}</strong> REVIEWS
-            </span>
+            {/* Ratings & Reviews */}
+            <div className="flex border-[3px] border-black shadow-[4px_4px_0px_rgba(255,0,0,1)] bg-black">
+              <div className="flex-1 text-center py-4 border-r-[2px] border-white/20">
+                <p className="text-xl font-black font-sans text-white">{ratingsCount}</p>
+                <p className="text-[9px] text-white/90 font-mono font-bold uppercase tracking-[0.15em]">RATINGS</p>
+              </div>
+              <div className="flex-1 text-center py-4">
+                <p className="text-xl font-black font-sans text-white">{reviewsCount}</p>
+                <p className="text-[9px] text-white/90 font-mono font-bold uppercase tracking-[0.15em]">REVIEWS</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -266,25 +312,18 @@ export default async function ProfilePage({
           </div>
         ) : (
           <>
-            {/* Currently Rotating - Top Artists from Spotify */}
-            <TopArtistsRow
-              initialArtists={cachedTopArtists}
-              isOwnProfile={isOwnProfile}
-              isSpotifyLinked={isSpotifyLinked}
-            />
-
-            {/* Top Rated Albums Grid */}
+            {/* TOP RATED ALBUMS */}
             <div className="mt-16 w-full">
               <div className="flex items-end justify-between border-b-[3px] border-black pb-4 mb-8">
                 <h2 className="text-sm text-black font-mono font-bold uppercase tracking-[0.2em] flex items-center gap-2">
                   <span className="w-2 h-2 bg-accent-red flex-shrink-0"></span>
-                  "TOP RATED"
+                  &quot;TOP RATED ALBUMS&quot;
                 </h2>
                 <Link
                   href={`/profile/${rawUsername}/ratings`}
                   className="text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em] hover:text-accent-red hover:underline decoration-2 underline-offset-4 transition-colors flex items-center gap-1"
                 >
-                  VIEW ALL <span className="text-lg leading-none">→</span>
+                  VIEW ALL <span className="text-lg leading-none">&rarr;</span>
                 </Link>
               </div>
 
@@ -303,7 +342,6 @@ export default async function ProfilePage({
                       key={rating.id}
                       className="block group relative aspect-square bg-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
                     >
-                      {/* Uses Cached Image URL from Database */}
                       {rating.album_image_url ? (
                         <img
                           src={rating.album_image_url}
@@ -324,7 +362,6 @@ export default async function ProfilePage({
                     </Link>
                   ))}
 
-                  {/* Empty State Placeholders to maintain grid layout */}
                   {[...Array(Math.max(0, 4 - topRatings.length))].map((_, i) => (
                     <div
                       key={i}
@@ -343,63 +380,25 @@ export default async function ProfilePage({
               )}
             </div>
 
-            {/* Published Playlists */}
-            {publishedPlaylists.length > 0 && (
-              <div className="mt-20 w-full">
-                <div className="flex items-end justify-between border-b-[3px] border-black pb-4 mb-8">
-                  <h2 className="text-sm text-black font-mono font-bold uppercase tracking-[0.2em] flex items-center gap-2">
-                    <span className="w-2 h-2 bg-[#1DB954] flex-shrink-0"></span>
-                    "PLAYLISTS"
-                  </h2>
-                  <div className="text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em] px-2 py-1 border-[2px] border-black bg-white shadow-[2px_2px_0px_#1DB954]">
-                    {publishedPlaylists.length} / 4
-                  </div>
-                </div>
+            {/* TOP ARTISTS ON SPOTIFY*/}
+            <TopArtistsRow
+              initialArtists={cachedTopArtists}
+              isOwnProfile={isOwnProfile}
+              isSpotifyLinked={isSpotifyLinked}
+            />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {publishedPlaylists.map(playlist => (
-                    <a
-                      key={playlist.id}
-                      href={`https://open.spotify.com/playlist/${playlist.spotify_playlist_id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group flex bg-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
-                    >
-                      {/* Image */}
-                      <div className="w-28 h-28 shrink-0 bg-neutral-200 border-r-[3px] border-black relative overflow-hidden">
-                        {playlist.image_url ? (
-                          <img src={playlist.image_url} alt={playlist.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 delay-75" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs font-mono">NO IMG</div>
-                        )}
-                        <div className="absolute top-2 left-2 bg-[#1DB954] text-black text-[8px] font-black tracking-widest px-1 py-0.5 border-[2px] border-black"></div>
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex flex-col justify-center p-4 flex-grow overflow-hidden">
-                        <h5 className="font-black font-serif text-xl uppercase truncate leading-none mb-2 group-hover:text-[#1DB954] transition-colors">{playlist.name}</h5>
-                        <p className="font-mono text-[10px] text-black/60 uppercase tracking-widest font-bold">
-                          {playlist.tracks_total} TRACKS
-                        </p>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Recent Reviews List */}
+            {/* RECENT REVIEWS*/}
             <div className="mt-20">
               <div className="flex items-end justify-between border-b-[3px] border-black pb-4 mb-8">
                 <h2 className="text-sm text-black font-mono font-bold uppercase tracking-[0.2em] flex items-center gap-2">
                   <span className="w-2 h-2 bg-accent-red flex-shrink-0"></span>
-                  "RECENT REVIEWS"
+                  &quot;RECENT REVIEWS&quot;
                 </h2>
                 <Link
                   href={`/profile/${rawUsername}/reviews`}
                   className="text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em] hover:text-accent-red hover:underline decoration-2 underline-offset-4 transition-colors flex items-center gap-1"
                 >
-                  VIEW ALL <span className="text-lg leading-none">→</span>
+                  VIEW ALL <span className="text-lg leading-none">&rarr;</span>
                 </Link>
               </div>
 
@@ -422,7 +421,6 @@ export default async function ProfilePage({
                               <div className="absolute top-1 left-1 w-full h-full bg-black/10 z-0"></div>
                             </div>
                           )}
-
                           <div className="flex flex-col">
                             <Link
                               href={`/album/${review.album_id}`}
@@ -443,9 +441,7 @@ export default async function ProfilePage({
                               <span className="text-[10px] font-sans tracking-tighter font-bold text-black/40">/100</span>
                             </div>
                           )}
-
                           <div className="h-8 w-[2px] bg-black/10 mx-2 hidden sm:block"></div>
-
                           <div className="flex flex-col items-end">
                             <span className="text-[10px] text-black/40 font-mono uppercase tracking-[0.2em]">LOGGED</span>
                             <span className="text-xs text-black font-mono font-bold uppercase">
@@ -456,7 +452,7 @@ export default async function ProfilePage({
                       </div>
 
                       <div className="relative">
-                        <div className="absolute -top-3 left-4 bg-white px-2 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-accent-red">"REVIEW"</div>
+                        <div className="absolute -top-3 left-4 bg-white px-2 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-accent-red">&quot;REVIEW&quot;</div>
                         <p className="text-black text-lg font-serif leading-relaxed whitespace-pre-wrap border-[2px] border-black p-6 pl-8 bg-neutral-50">
                           {review.content}
                         </p>
@@ -470,6 +466,48 @@ export default async function ProfilePage({
                 )}
               </div>
             </div>
+
+            {/* PUBLISHED SPOTIFY PLAYLISTS*/}
+            {publishedPlaylists.length > 0 && (
+              <div className="mt-20 w-full">
+                <div className="flex items-end justify-between border-b-[3px] border-black pb-4 mb-8">
+                  <h2 className="text-sm text-black font-mono font-bold uppercase tracking-[0.2em] flex items-center gap-2">
+                    <span className="w-2 h-2 bg-[#1DB954] flex-shrink-0"></span>
+                    &quot;PLAYLISTS&quot;
+                  </h2>
+                  <div className="text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em] px-2 py-1 border-[2px] border-black bg-white shadow-[2px_2px_0px_#1DB954]">
+                    {publishedPlaylists.length} / 4
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {publishedPlaylists.map(playlist => (
+                    <a
+                      key={playlist.id}
+                      href={`https://open.spotify.com/playlist/${playlist.spotify_playlist_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex bg-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
+                    >
+                      <div className="w-28 h-28 shrink-0 bg-neutral-200 border-r-[3px] border-black relative overflow-hidden">
+                        {playlist.image_url ? (
+                          <img src={playlist.image_url} alt={playlist.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 delay-75" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs font-mono">NO IMG</div>
+                        )}
+                        <div className="absolute top-2 left-2 bg-[#1DB954] text-black text-[8px] font-black tracking-widest px-1 py-0.5 border-[2px] border-black"></div>
+                      </div>
+                      <div className="flex flex-col justify-center p-4 flex-grow overflow-hidden">
+                        <h5 className="font-black font-serif text-xl uppercase truncate leading-none mb-2 group-hover:text-[#1DB954] transition-colors">{playlist.name}</h5>
+                        <p className="font-mono text-[10px] text-black/60 uppercase tracking-widest font-bold">
+                          {playlist.tracks_total} TRACKS
+                        </p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
