@@ -5,6 +5,7 @@ import CommentNode from "./CommentNode";
 interface CommentThreadProps {
   comments: any[];
   spotifyArtistId: string;
+  currentUserId?: string;
 }
 
 /**
@@ -35,7 +36,7 @@ function buildCommentTree(flatComments: any[]) {
 /**
  * transforms data into a tree.
  */
-export default function CommentThread({ comments, spotifyArtistId }: CommentThreadProps) {
+export default function CommentThread({ comments, spotifyArtistId, currentUserId }: CommentThreadProps) {
   const tree = buildCommentTree(comments);
 
   if (tree.length === 0) {
@@ -61,6 +62,7 @@ export default function CommentThread({ comments, spotifyArtistId }: CommentThre
             key={node.id}
             comment={node}
             spotifyArtistId={spotifyArtistId}
+            currentUserId={currentUserId}
             depth={0}
           />
         ))}

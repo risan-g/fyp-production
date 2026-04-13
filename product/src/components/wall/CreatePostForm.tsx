@@ -69,7 +69,7 @@ export default function CreatePostForm({ spotifyArtistId, onClose }: { spotifyAr
         disabled={saving || !title.trim() || !content.trim()}
         className="bg-black text-white font-mono font-bold uppercase tracking-[0.2em] py-4 border-[3px] border-black hover:bg-accent-red hover:shadow-[4px_4px_0px_rgba(255,0,0,1)] hover:-translate-y-1 transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
       >
-        {saving ? "POSTING..." : "BROADCAST"}
+        {saving ? "POSTING..." : "POST"}
       </button>
     </form>
   );

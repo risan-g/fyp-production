@@ -1,18 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  /* Off-White Canvas */
   --background: #f4f4f0;
-  /* Stark Black/Charcoal */
   --foreground: #111111;
-  /* Warning Red Accent */
   --accent-red: #ff0000;
+  --accent-blue: #0000ff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-accent-red: var(--accent-red);
+  --color-accent-blue: var(--accent-blue);
   --font-sans: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-serif: 'Playfair Display', Georgia, serif;
   --font-mono: 'Courier New', Courier, monospace;
