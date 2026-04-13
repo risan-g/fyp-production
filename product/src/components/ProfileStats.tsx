@@ -12,8 +12,8 @@ interface ProfileStatsProps {
 /**
  * ProfileStats (Client Component)
  *
- * This acts as the "Trigger" for the interactive stats system.
- * It replaces the static numbers on the Profile Page.
+ * Interactive stats row for Syncs and Rotation.
+ * Clicking either stat opens the StatsModal.
  */
 export default function ProfileStats({
   userId,
@@ -33,31 +33,31 @@ export default function ProfileStats({
 
   return (
     <>
-      {/* TRIGGER AREA */}
-      <div className="grid grid-cols-2 gap-4 border-y-[3px] border-black py-4 mb-12 w-full max-w-md mx-auto">
-        {/* Syncs Trigger */}
+      {/* Social Stats Row */}
+      <div className="flex w-full">
+        {/* Syncs — Clickable */}
         <button
           onClick={() => openModal("syncs")}
-          className="text-center group border-[3px] border-transparent hover:border-black p-4 transition-all hover:bg-black hover:shadow-[4px_4px_0px_rgba(255,0,0,1)] focus:outline-none flex flex-col items-center justify-center cursor-pointer"
+          className="flex-1 text-center group py-4 border-r-[2px] border-black transition-all hover:bg-black focus:outline-none cursor-pointer"
         >
-          <p className="text-[10px] text-black/60 font-mono font-bold uppercase tracking-[0.2em] mb-2 group-hover:text-white/60 transition-colors">
-            "SYNCS"
-          </p>
-          <p className="text-4xl font-black font-sans text-black group-hover:text-white transition-colors">
+          <p className="text-xl font-black font-sans text-black group-hover:text-white transition-colors">
             {syncCount}
+          </p>
+          <p className="text-[9px] text-black/40 font-mono font-bold uppercase tracking-[0.15em] group-hover:text-white/50 transition-colors">
+            SYNCS
           </p>
         </button>
 
-        {/* Rotation Trigger */}
+        {/* Rotation — Clickable */}
         <button
           onClick={() => openModal("rotation")}
-          className="text-center group border-[3px] border-transparent hover:border-black p-4 transition-all hover:bg-black hover:shadow-[4px_4px_0px_rgba(255,0,0,1)] focus:outline-none flex flex-col items-center justify-center cursor-pointer"
+          className="flex-1 text-center group py-4 transition-all hover:bg-black focus:outline-none cursor-pointer"
         >
-          <p className="text-[10px] text-black/60 font-mono font-bold uppercase tracking-[0.2em] mb-2 group-hover:text-white/60 transition-colors">
-            "ROTATION"
-          </p>
-          <p className="text-4xl font-black font-sans text-black group-hover:text-white transition-colors">
+          <p className="text-xl font-black font-sans text-black group-hover:text-white transition-colors">
             {rotationCount}
+          </p>
+          <p className="text-[9px] text-black/40 font-mono font-bold uppercase tracking-[0.15em] group-hover:text-white/50 transition-colors">
+            ROTATION
           </p>
         </button>
       </div>

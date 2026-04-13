@@ -9,22 +9,32 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 // Standardised number of items to display per page for consistent layout
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 12;
 
-/**
- * AllRatingsPage (Server Component)
- * Displays a paginated grid of every album a user has rated.
- * Uses unified 'reviews' table and cached metadata.
- */
 export default async function AllRatingsPage(props: {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; sort?: string }>;
 }) {
   const params = await props.params;
   const searchParams = await props.searchParams;
   const supabase = await createClient();
 
   const username = decodeURIComponent(params.username);
+
+  /**
+   * Sort Logic Selection
+   */
+  const currentSort = searchParams.sort || "highest";
+  
+  // Mapping sort keys to database columns and ordering
+  const sortMap: Record<string, { column: string; ascending: boolean }> = {
+    highest: { column: "rating", ascending: false },
+    lowest: { column: "rating", ascending: true },
+    newest: { column: "created_at", ascending: false },
+    oldest: { column: "created_at", ascending: true },
+  };
+
+  const { column, ascending } = sortMap[currentSort] || sortMap.highest;
 
   /**
    * Pagination
@@ -55,7 +65,7 @@ export default async function AllRatingsPage(props: {
     .select("*", { count: "exact" })
     .eq("user_id", profile.id)
     .not("rating", "is", null) // Filter out unrated reviews
-    .order("created_at", { ascending: false }) // Most recent first
+    .order(column, { ascending })
     .range(from, to);
 
   const totalRatings = count || 0;
@@ -68,75 +78,132 @@ export default async function AllRatingsPage(props: {
     const hasPrev = currentPage > 1;
     const hasNext = currentPage < totalPages;
 
+    const baseLink = `/profile/${params.username}/ratings?sort=${currentSort}`;
+
     return (
-      <div className="flex items-center justify-between border-t border-neutral-800 pt-6 mt-8 mb-8">
+      <div className="flex items-center justify-between border-t-[3px] border-black pt-6 mt-8 mb-8">
         {hasPrev ? (
           <Link
-            href={`/profile/${params.username}/ratings?page=${currentPage - 1}`}
-            className="text-sm font-bold text-white hover:text-neutral-400 transition-colors px-4 py-2 bg-neutral-900 rounded"
+            href={`${baseLink}&page=${currentPage - 1}`}
+            className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-black px-4 py-2 border-[3px] border-black bg-white shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
           >
-            ← Previous
+            &larr; PREV
           </Link>
         ) : (
-          <span className="text-sm font-bold text-neutral-700 px-4 py-2 cursor-not-allowed">
-            ← Previous
+          <span className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-black/30 px-4 py-2 border-[3px] border-black/20 cursor-not-allowed">
+            &larr; PREV
           </span>
         )}
 
-        <span className="text-xs text-neutral-500 font-mono uppercase tracking-widest">
-          Page {currentPage} of {totalPages || 1}
+        <span className="text-[10px] text-black/60 font-mono font-bold uppercase tracking-[0.2em]">
+          PAGE {currentPage} OF {totalPages || 1}
         </span>
 
         {hasNext ? (
           <Link
-            href={`/profile/${params.username}/ratings?page=${currentPage + 1}`}
-            className="text-sm font-bold text-white hover:text-neutral-400 transition-colors px-4 py-2 bg-neutral-900 rounded"
+            href={`${baseLink}&page=${currentPage + 1}`}
+            className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-black px-4 py-2 border-[3px] border-black bg-white shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
           >
-            Next →
+            NEXT &rarr;
           </Link>
         ) : (
-          <span className="text-sm font-bold text-neutral-700 px-4 py-2 cursor-not-allowed">
-            Next →
+          <span className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-black/30 px-4 py-2 border-[3px] border-black/20 cursor-not-allowed">
+            NEXT &rarr;
           </span>
         )}
       </div>
     );
   };
 
+  /**
+   * Sort Controls — Joined Segmented Control Bar (Responsive)
+   */
+  const SortControls = () => {
+    const options = [
+      { key: "highest", label: "HIGHEST" },
+      { key: "lowest", label: "LOWEST" },
+      { key: "newest", label: "NEWEST" },
+      { key: "oldest", label: "OLDEST" },
+    ];
+
+    return (
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-8">
+        <span className="text-[10px] text-black/40 font-mono font-bold uppercase tracking-[0.2em] shrink-0">SORT:</span>
+        <div className="grid grid-cols-2 sm:flex border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] w-full sm:w-auto">
+          {options.map((opt, i) => {
+            const isActive = currentSort === opt.key;
+            
+            // Border Logic:
+            // Mobile (2x2 grid): 
+            // - Right border on items 0 and 2 (first column)
+            // - Bottom border on items 0 and 1 (first row)
+            // Desktop (1x4 row):
+            // - Right border on items 0, 1, 2
+            // - No bottom borders
+            
+            return (
+              <Link
+                key={opt.key}
+                href={`/profile/${params.username}/ratings?sort=${opt.key}`}
+                className={`text-[10px] font-mono font-bold uppercase tracking-[0.2em] px-3 py-2.5 sm:px-4 sm:py-2 transition-colors text-center border-black ${
+                  isActive
+                    ? "bg-black text-white"
+                    : "bg-white text-black hover:bg-neutral-100"
+                } ${
+                  // Right borders
+                  (i % 2 === 0) ? "border-r-[2px]" : "sm:border-l-0"
+                } ${
+                  // Desktop specific right border for item 2 (which is index 1)
+                  (i === 1) ? "sm:border-r-[2px]" : ""
+                } ${
+                  // Bottom borders (Mobile only)
+                  (i < 2) ? "border-b-[2px] sm:border-b-0" : ""
+                }`}
+              >
+                {opt.label}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="bg-black text-white min-h-screen p-8">
-      <div className="max-w-7xl mx-auto pt-8">
+    <div className="bg-white text-black min-h-screen p-8">
+      <div className="max-w-4xl mx-auto pt-24">
         {/* Navigation Header */}
-        <div className="flex items-center gap-6 mb-16 border-b border-neutral-800 pb-8">
+        <div className="flex items-center gap-6 mb-16 border-b-[3px] border-black pb-8">
           <Link
             href={`/profile/${params.username}`}
-            className="group flex items-center justify-center w-12 h-12 rounded-full bg-neutral-900 border border-neutral-800 hover:border-neutral-600 transition-colors"
+            className="group flex items-center justify-center w-12 h-12 border-[3px] border-black bg-white shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
           >
-            <span className="text-xl group-hover:-translate-x-0.5 transition-transform">
-              ←
+            <span className="text-xl font-black">
+              &larr;
             </span>
           </Link>
 
           <div className="flex flex-col">
-            <h1 className="text-4xl font-bold tracking-tight">Library</h1>
-            <p className="text-neutral-500 text-sm uppercase tracking-widest font-medium mt-1">
-              Rated by {profile.username} • {totalRatings} Total
+            <h1 className="text-5xl font-serif font-black uppercase tracking-tighter text-black">&quot;ARCHIVE&quot;</h1>
+            <p className="text-[10px] text-black/50 font-mono font-bold uppercase tracking-[0.2em] mt-1">
+              ARCHIVED BY {profile.username.toUpperCase()} &bull; {totalRatings} TOTAL
             </p>
           </div>
         </div>
 
+        {totalRatings > 0 && <SortControls />}
         {totalRatings > 0 && <PaginationControls />}
 
         {/* Visual Ratings Grid */}
         {ratings && ratings.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
             {ratings.map((rating) => (
               <Link
                 href={`/album/${rating.album_id}`}
                 key={rating.id}
                 className="group flex flex-col gap-3"
               >
-                <div className="relative aspect-square bg-neutral-900 rounded-xl overflow-hidden border border-neutral-800 shadow-sm group-hover:border-neutral-600 transition-colors">
+                <div className="relative aspect-square bg-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] overflow-hidden group-hover:shadow-none group-hover:translate-x-[4px] group-hover:translate-y-[4px] transition-all">
                   {/* Image rendering */}
                   {rating.album_image_url ? (
                     <img
@@ -145,33 +212,42 @@ export default async function AllRatingsPage(props: {
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center">
-                      <span className="text-xs text-neutral-600 font-bold">
-                        {rating.album_name || "Unknown"}
+                    <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center bg-neutral-100">
+                      <span className="text-xs text-black font-mono font-bold uppercase">
+                        {rating.album_name || "UNKNOWN"}
                       </span>
                     </div>
                   )}
 
                   {/* Rating Badge Overlay */}
-                  <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-md px-2 py-1 rounded text-xs font-bold text-white border border-white/10 shadow-lg">
+                  <div className="absolute top-0 right-0 bg-white px-2 py-1 text-xs font-mono font-bold text-black border-l-[3px] border-b-[3px] border-black shadow-[-2px_2px_0px_rgba(0,0,0,1)]">
                     {rating.rating}
                   </div>
                 </div>
 
                 <div className="flex flex-col">
-                  <span className="font-bold text-sm text-white truncate group-hover:text-neutral-300 transition-colors">
+                  <span className="font-bold text-sm font-sans text-black uppercase tracking-tight truncate group-hover:text-accent-red transition-colors">
                     {rating.album_name}
                   </span>
-                  <span className="text-xs text-neutral-500 truncate">
-                    {rating.artist_name}
-                  </span>
+                  <div className="flex items-center justify-between gap-2 overflow-hidden">
+                    <span className="text-[10px] text-black/50 font-mono uppercase tracking-widest truncate shrink">
+                      {rating.artist_name}
+                    </span>
+                    <span className="text-[9px] text-black/30 font-mono tabular-nums shrink-0 uppercase">
+                      {new Date(rating.created_at).toLocaleDateString("en-GB", { 
+                        day: "2-digit", 
+                        month: "2-digit", 
+                        year: "2-digit" 
+                      }).replace(/\//g, ".")}
+                    </span>
+                  </div>
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          <div className="py-20 text-center border border-dashed border-neutral-800 rounded-xl">
-            <p className="text-neutral-500">No ratings found.</p>
+          <div className="py-20 text-center border-[3px] border-black border-dashed bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)]">
+            <p className="text-black/50 text-xs font-mono font-bold uppercase tracking-[0.2em]">NO RATINGS FOUND.</p>
           </div>
         )}
 
