@@ -5,6 +5,8 @@ import { fetchSpotifyData } from "@/lib/spotify";
 import DBControl from "@/components/wall/DBControl";
 import CommentThread from "@/components/wall/CommentThread";
 import GlobalReplyForm from "@/components/wall/GlobalReplyForm";
+import DeletePostButton from "@/components/wall/DeletePostButton";
+import FormattedText from "@/components/wall/FormattedText";
 
 async function fetchArtist(id: string) {
   return await fetchSpotifyData(`https://api.spotify.com/v1/artists/${id}`);
@@ -29,7 +31,7 @@ export default async function PostPage({
       .from("posts")
       .select(`
         *,
-        profiles (username),
+        profiles (username, avatar_url),
         votes (vote_type, user_id)
       `)
       .eq("id", postId)
@@ -38,7 +40,7 @@ export default async function PostPage({
       .from("comments")
       .select(`
         *,
-        profiles (username),
+        profiles (username, avatar_url),
         votes (vote_type, user_id)
       `)
       .eq("post_id", postId)
@@ -88,13 +90,35 @@ export default async function PostPage({
               </h1>
               <div className="bg-white border-[3px] border-black p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)]">
                 <p className="font-serif text-xl leading-relaxed text-black whitespace-pre-wrap">
-                  {post.content}
+                  <FormattedText text={post.content} />
                 </p>
               </div>
-              <div className="mt-4 flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-widest text-black/50">
-                <span>POSTED BY {post.profiles?.username || "UNKNOWN"}</span>
+              <div className="mt-4 flex items-center gap-3 text-[10px] font-mono font-bold uppercase tracking-widest text-black/50">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-white border-[2px] border-black flex items-center justify-center overflow-hidden shrink-0">
+                    {post.profiles?.avatar_url ? (
+                      <img
+                        src={post.profiles.avatar_url}
+                        alt={post.profiles.username}
+                        className="w-full h-full object-cover grayscale"
+                      />
+                    ) : (
+                      <span className="text-[8px] font-bold text-black">
+                        {post.profiles?.username?.[0]?.toUpperCase() || "?"}
+                      </span>
+                    )}
+                  </div>
+                  <span>POSTED BY {post.profiles?.username || "UNKNOWN"}</span>
+                </div>
                 <span>•</span>
                 <span suppressHydrationWarning>{new Date(post.created_at).toLocaleString()}</span>
+
+                {currentUser?.id === post.user_id && (
+                  <>
+                    <span>•</span>
+                    <DeletePostButton postId={post.id} spotifyArtistId={id} />
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -109,6 +133,7 @@ export default async function PostPage({
         <CommentThread
           comments={processedComments}
           spotifyArtistId={id}
+          currentUserId={currentUser?.id}
         />
       </div>
     </div>

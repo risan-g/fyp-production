@@ -154,7 +154,9 @@ export async function toggleVote(
 
 /**
  * delete comment
- * We "Soft Delete" comments so that if they have replies beneath them, the thread doesn't abruptly break.
+ * If the comment has replies beneath it, we "Soft Delete" so the thread doesn't break.
+ * If it has no replies, we hard delete it entirely.
+ * After deletion, we walk up the parent chain and clean up any voided ancestors that no longer have children (cascade cleanup).
  */
 export async function voidComment(commentId: string, spotifyArtistId: string) {
   const supabase = await createClient();
@@ -162,17 +164,75 @@ export async function voidComment(commentId: string, spotifyArtistId: string) {
 
   if (!user) throw new Error("Must be logged in.");
 
-  // We simply flip the 'is_voided' flag to true and overwrite text. 
-  // RLS ensures only the author can actually execute this update.
-  const { error } = await supabase
+  // Get the comment's parent_id before we do anything
+  const { data: comment } = await supabase
     .from("comments")
-    .update({ is_voided: true, content: "[CONTENT VOIDED]" })
+    .select("parent_id")
     .eq("id", commentId)
-    .eq("user_id", user.id);
+    .single();
 
-  if (error) throw error;
+  // Check if this comment has any children
+  const { count } = await supabase
+    .from("comments")
+    .select("id", { count: "exact", head: true })
+    .eq("parent_id", commentId);
+
+  if (count && count > 0) {
+    // Soft delete: keep the row so the thread structure is preserved
+    const { error } = await supabase
+      .from("comments")
+      .update({ is_voided: true, content: "[DELETED]" })
+      .eq("id", commentId)
+      .eq("user_id", user.id);
+
+    if (error) throw error;
+  } else {
+    // Hard delete: no children, so just remove it
+    const { error } = await supabase
+      .from("comments")
+      .delete()
+      .eq("id", commentId)
+      .eq("user_id", user.id);
+
+    if (error) throw error;
+
+    // Cascade cleanup: walk up and remove voided parents with no remaining children
+    if (comment?.parent_id) {
+      await cleanupVoidedAncestors(supabase, comment.parent_id);
+    }
+  }
 
   revalidatePath(`/artist/${spotifyArtistId}`);
+}
+
+/**
+ * Recursively removes voided ancestor comments that no longer have children.
+ */
+async function cleanupVoidedAncestors(supabase: any, parentId: string) {
+  // Fetch the parent comment
+  const { data: parent } = await supabase
+    .from("comments")
+    .select("id, parent_id, is_voided")
+    .eq("id", parentId)
+    .single();
+
+  if (!parent || !parent.is_voided) return;
+
+  // Check if this voided parent still has children
+  const { count } = await supabase
+    .from("comments")
+    .select("id", { count: "exact", head: true })
+    .eq("parent_id", parentId);
+
+  if (count && count > 0) return; // Still has children, stop
+
+  // No children left and it's voided — delete it
+  await supabase.from("comments").delete().eq("id", parentId);
+
+  // Continue walking up
+  if (parent.parent_id) {
+    await cleanupVoidedAncestors(supabase, parent.parent_id);
+  }
 }
 
 /**

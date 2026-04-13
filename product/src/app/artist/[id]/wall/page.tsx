@@ -39,7 +39,7 @@ export default async function WallPage({
       .from("posts")
       .select(`
         *,
-        profiles (username),
+        profiles (username, avatar_url),
         votes (vote_type, user_id),
         comments(count)
       `)
