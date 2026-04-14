@@ -21,7 +21,7 @@ interface SettingsClientProps {
   initialBio: string;
 }
 
-type TabState = "ACCOUNT" | "SECURITY" | "PRIVACY" | "INTEGRATION" | "PREFERENCES";
+type TabState = "ACCOUNT" | "SECURITY" | "PRIVACY" | "INTEGRATION";
 
 export default function SettingsClient({
   userId,
@@ -419,15 +419,6 @@ export default function SettingsClient({
           INTEGRATION
         </button>
 
-        <button
-          onClick={() => setActiveTab("PREFERENCES")}
-          className={`w-full text-left px-6 py-4 font-mono text-xs uppercase tracking-[0.2em] font-bold border-[3px] transition-all ${activeTab === "PREFERENCES"
-            ? "bg-black text-white border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]"
-            : "bg-white text-black border-black/20 hover:border-black/50 shadow-none hover:shadow-[2px_2px_0px_rgba(0,0,0,0.5)]"
-            }`}
-        >
-          PREFERENCES
-        </button>
       </div>
 
       {/* Content*/}
@@ -876,19 +867,6 @@ export default function SettingsClient({
           </div>
         )}
 
-        {/* PREFERENCES */}
-        {activeTab === "PREFERENCES" && (
-          <div className="flex flex-col w-full max-w-2xl animate-in fade-in duration-300">
-            <h2 className="text-2xl md:text-3xl font-black uppercase mb-8 border-b-[2px] border-black/10 pb-4">
-              Preferences
-            </h2>
-            <div className="bg-neutral-50 border-[3px] border-black border-dashed p-12 flex flex-col items-center justify-center text-center">
-              <p className="font-mono text-sm font-bold text-black/40 uppercase tracking-widest">
-                "PREFERENCES COMING SOON"
-              </p>
-            </div>
-          </div>
-        )}
 
       </div>
     </div>

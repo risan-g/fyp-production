@@ -71,7 +71,7 @@ export default async function Home() {
               {username ? (
                 <span className="block border-b-8 border-accent-red pb-4">HI, {username}</span>
               ) : (
-                "THE SYNCED"
+                "DOTWV"
               )}
             </h1>
 
