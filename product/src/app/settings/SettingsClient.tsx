@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updatePrivacy, updateUsername, deleteAccount, changePassword, updateSpotifyVisibility, updateBio } from "@/app/actions/settings";
+import { updatePrivacy, updateUsername, deleteAccount, changePassword, updateSpotifyVisibility, updateTopArtistsVisibility, updatePlaylistsVisibility, updateBio } from "@/app/actions/settings";
 import { AnimatePresence, motion } from "framer-motion";
 import AvatarUpload from "@/components/Avatar-Upload";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -18,6 +18,8 @@ interface SettingsClientProps {
   initialSpotifyUsername: string | null;
   initialSpotifyEmail: string | null;
   initialShowCurrentlyPlaying: boolean;
+  initialShowTopArtists: boolean;
+  initialShowPlaylists: boolean;
   initialBio: string;
 }
 
@@ -33,6 +35,8 @@ export default function SettingsClient({
   initialSpotifyUsername,
   initialSpotifyEmail,
   initialShowCurrentlyPlaying,
+  initialShowTopArtists,
+  initialShowPlaylists,
   initialBio,
 }: SettingsClientProps) {
   const router = useRouter();
@@ -80,6 +84,8 @@ export default function SettingsClient({
   const [spotifyLinked, setSpotifyLinked] = useState(isSpotifyLinked);
   const [spotifyUsername, setSpotifyUsername] = useState(initialSpotifyUsername);
   const [showCurrentlyPlaying, setShowCurrentlyPlaying] = useState(initialShowCurrentlyPlaying);
+  const [showTopArtists, setShowTopArtists] = useState(initialShowTopArtists);
+  const [showPlaylists, setShowPlaylists] = useState(initialShowPlaylists);
   const [isSpotifyLoading, setIsSpotifyLoading] = useState(false);
 
   const supabase = createClient();
@@ -138,6 +144,48 @@ export default function SettingsClient({
     } catch (error) {
       console.error("Failed to update Spotify visibility:", error);
       setShowCurrentlyPlaying(!newValue);
+      showToast("FAILED TO UPDATE VISIBILITY.", "error");
+    } finally {
+      setIsSpotifyLoading(false);
+    }
+  };
+
+  /**
+   * Toggle Top Artists Visibility
+   */
+  const handleTopArtistsVisibilityToggle = async () => {
+    setIsSpotifyLoading(true);
+    const newValue = !showTopArtists;
+    setShowTopArtists(newValue);
+
+    try {
+      await updateTopArtistsVisibility(newValue);
+      window.dispatchEvent(new Event("profileUpdated"));
+      showToast(`TOP ARTISTS: ${newValue ? "VISIBLE" : "HIDDEN"}`, "success");
+    } catch (error) {
+      console.error("Failed to update top artists visibility:", error);
+      setShowTopArtists(!newValue);
+      showToast("FAILED TO UPDATE VISIBILITY.", "error");
+    } finally {
+      setIsSpotifyLoading(false);
+    }
+  };
+
+  /**
+   * Toggle Playlists Visibility
+   */
+  const handlePlaylistsVisibilityToggle = async () => {
+    setIsSpotifyLoading(true);
+    const newValue = !showPlaylists;
+    setShowPlaylists(newValue);
+
+    try {
+      await updatePlaylistsVisibility(newValue);
+      window.dispatchEvent(new Event("profileUpdated"));
+      showToast(`PLAYLISTS: ${newValue ? "VISIBLE" : "HIDDEN"}`, "success");
+    } catch (error) {
+      console.error("Failed to update playlists visibility:", error);
+      setShowPlaylists(!newValue);
       showToast("FAILED TO UPDATE VISIBILITY.", "error");
     } finally {
       setIsSpotifyLoading(false);
@@ -853,6 +901,50 @@ export default function SettingsClient({
                   >
                     <motion.div
                       animate={{ x: showCurrentlyPlaying ? 32 : 0 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      className="absolute top-[2px] left-[2px] w-6 h-6 bg-white border-[2px] border-black"
+                    />
+                  </button>
+                </div>
+              )}
+
+              {/* Show Top Artists Toggle */}
+              {spotifyLinked && (
+                <div className="flex items-center justify-between p-6 bg-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+                  <div className="flex flex-col gap-1">
+                    <h4 className="font-black uppercase text-sm tracking-tight">Show Top Artists</h4>
+                    <p className="font-mono text-[9px] text-black/40 uppercase tracking-widest">DISPLAY YOUR TOP SPOTIFY ARTISTS ON YOUR PROFILE</p>
+                  </div>
+
+                  <button
+                    onClick={handleTopArtistsVisibilityToggle}
+                    disabled={isSpotifyLoading}
+                    className={`relative w-16 h-8 border-[3px] border-black transition-colors ${showTopArtists ? "bg-[#1DB954]" : "bg-neutral-200"}`}
+                  >
+                    <motion.div
+                      animate={{ x: showTopArtists ? 32 : 0 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      className="absolute top-[2px] left-[2px] w-6 h-6 bg-white border-[2px] border-black"
+                    />
+                  </button>
+                </div>
+              )}
+
+              {/* Show Playlists Toggle */}
+              {spotifyLinked && (
+                <div className="flex items-center justify-between p-6 bg-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+                  <div className="flex flex-col gap-1">
+                    <h4 className="font-black uppercase text-sm tracking-tight">Show Playlists</h4>
+                    <p className="font-mono text-[9px] text-black/40 uppercase tracking-widest">DISPLAY YOUR PUBLISHED PLAYLISTS ON YOUR PROFILE</p>
+                  </div>
+
+                  <button
+                    onClick={handlePlaylistsVisibilityToggle}
+                    disabled={isSpotifyLoading}
+                    className={`relative w-16 h-8 border-[3px] border-black transition-colors ${showPlaylists ? "bg-[#1DB954]" : "bg-neutral-200"}`}
+                  >
+                    <motion.div
+                      animate={{ x: showPlaylists ? 32 : 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
                       className="absolute top-[2px] left-[2px] w-6 h-6 bg-white border-[2px] border-black"
                     />

@@ -86,7 +86,7 @@ export default async function ProfilePage({
    */
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("id, username, created_at, avatar_url, is_private, show_currently_playing, bio")
+    .select("id, username, created_at, avatar_url, is_private, show_currently_playing, show_top_artists, show_playlists, bio")
     .ilike("username", username)
     .single();
 
@@ -381,11 +381,13 @@ export default async function ProfilePage({
             </div>
 
             {/* TOP ARTISTS ON SPOTIFY*/}
-            <TopArtistsRow
-              initialArtists={cachedTopArtists}
-              isOwnProfile={isOwnProfile}
-              isSpotifyLinked={isSpotifyLinked}
-            />
+            {(profile.show_top_artists ?? true) && (
+              <TopArtistsRow
+                initialArtists={cachedTopArtists}
+                isOwnProfile={isOwnProfile}
+                isSpotifyLinked={isSpotifyLinked}
+              />
+            )}
 
             {/* RECENT REVIEWS*/}
             <div className="mt-20">
@@ -468,7 +470,7 @@ export default async function ProfilePage({
             </div>
 
             {/* PUBLISHED SPOTIFY PLAYLISTS*/}
-            {publishedPlaylists.length > 0 && (
+            {(profile.show_playlists ?? true) && publishedPlaylists.length > 0 && (
               <div className="mt-20 w-full">
                 <div className="flex items-end justify-between border-b-[3px] border-black pb-4 mb-8">
                   <h2 className="text-sm text-black font-mono font-bold uppercase tracking-[0.2em] flex items-center gap-2">
