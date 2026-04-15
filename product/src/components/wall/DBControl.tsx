@@ -1,3 +1,7 @@
+/** 
+ * Decibel (dB) engagement control.
+ * Implements Optimistic UI to provide zero-latency feedback for community voting.
+ */
 "use client";
 
 import { useState } from "react";
@@ -13,7 +17,9 @@ interface DBControlProps {
 }
 
 /**
- * [ + ] and [ - ]
+ * DBControl
+ * Renders the voting interface and synchronises local state with the database.
+ * We resolve state mathematically before the network request completes.
  */
 export default function DBControl({
   entityId,
@@ -38,7 +44,8 @@ export default function DBControl({
     // If they click a different vote, it swaps.
     const newVote = currentVote === value ? 0 : value;
 
-    // Calculate Score Difference mathematically 
+    // Calculate explicit difference.
+    // E.g. Swapping from an Upvote (1) to a Downvote (-1) requires a delta of -2 to display correctly.
     const scoreDiff = newVote - currentVote;
 
     // Optimistic Update

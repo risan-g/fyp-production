@@ -1,3 +1,7 @@
+/** 
+ * User profile page.
+ * Fetches all social and listening data in parallel, with a rigid privacy guard for non-synced visitors. 
+ */
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -21,6 +25,10 @@ const formatDate = (dateString: string) => {
   });
 };
 
+/**
+ * Dynamic SEO and social metadata generation.
+ * Pulls the user's avatar and bio for rich link previews (Twitter Cards/Open Graph).
+ */
 export async function generateMetadata({
   params,
 }: {
@@ -60,9 +68,9 @@ export async function generateMetadata({
 }
 
 /**
- * ProfilePage (Server Component)
+ * ProfilePage (React Server Component)
  *
- * Displays a public user profile.
+ * Orchestrates the rendering of the user's identity, stats, heavy rotation, and review archive.
  */
 export default async function ProfilePage({
   params,
@@ -97,7 +105,9 @@ export default async function ProfilePage({
   const isOwnProfile = currentUser?.id === profile.id;
 
   /**
-   * Fetch All Data
+   * Parallel Data Fetching.
+   * We execute all 10 network requests concurrently via Promise.all 
+   * to completely bypass traditional waterfall rendering delays.
    */
   const [
     syncCountData,
@@ -191,7 +201,8 @@ export default async function ProfilePage({
   const isPending = amIFollowingData.data?.status === "pending";
   const isFollower = !!areTheyFollowingMeData.data;
 
-  // PRIVACY CHECK
+  // Strict RLS emulation on the frontend layout level.
+  // We only render private data if the visitor is the owner or an accepted Sync.
   const isApprovedToView = isOwnProfile || (profile.is_private === false) || (profile.is_private === true && isFollowing);
 
   const ratingsCount = ratingsCountData.count || 0;

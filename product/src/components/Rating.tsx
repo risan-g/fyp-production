@@ -1,3 +1,7 @@
+/** 
+ * Vertical 0-100 rating fader.
+ * Replaces standard 5-star inputs with a draggable integer scale calculated from Y-coordinates.
+ */
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -88,7 +92,10 @@ export default function Rating({
     }
   };
 
-  // Calculates the score (0-100) based on where the mouse is vertically.
+  /** 
+   * Normalises the vertical offset to calculate a 0-100 integer.
+   * We calculate from the track's bounding box and invert it so 100 sits at the top.
+   */
   const updateRatingFromY = (clientY: number) => {
     if (!sliderWrapperRef.current) return;
 
@@ -164,12 +171,14 @@ export default function Rating({
         .single();
 
       if (existing && existing.content) {
+        // If a text review exists alongside the rating, we only nullify the rating.
         await supabase
           .from("reviews")
           .update({ rating: null, updated_at: new Date().toISOString() })
           .eq("user_id", user.id)
           .eq("album_id", albumId);
       } else {
+        // If no text review exists, we completely wipe the row to avoid dangling null records.
         await supabase
           .from("reviews")
           .delete()
@@ -189,6 +198,10 @@ export default function Rating({
     }
   };
 
+  /**
+   * Commits the integer score to Supabase.
+   * Acts as an upsert: updates the row if a text review already exists, otherwise inserts a fresh entry.
+   */
   const handleSaveRating = async () => {
     if (!user) return router.push("/sign-in");
     if (rating === originalRating) return;
