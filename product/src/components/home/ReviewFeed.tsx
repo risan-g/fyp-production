@@ -89,8 +89,8 @@ export default function ReviewFeed({ feedType, optimisticReview, user }: ReviewF
                     const validReviews = data.filter((r) => r.content || r.rating !== null);
                     setReviews(validReviews);
                 }
-            } catch (err) {
-                console.error("Failed to fetch feed:", err);
+            } catch (err: any) {
+                console.error("Failed to fetch feed:", err.message || err, Object.getOwnPropertyNames(err).reduce((a, b) => { (a as any)[b] = err[b]; return a; }, {}));
             } finally {
                 if (isMounted) setIsLoading(false);
             }
