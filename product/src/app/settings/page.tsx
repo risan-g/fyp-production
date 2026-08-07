@@ -15,15 +15,9 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, is_private, username, avatar_url, show_currently_playing, show_top_artists, show_playlists, bio")
+    .select("id, is_private, username, avatar_url, bio")
     .eq("id", user.id)
     .single();
-
-  const { data: identitiesData } = await supabase.auth.getUserIdentities();
-  const spotifyIdentity = identitiesData?.identities?.find(id => id.provider === "spotify");
-  const isSpotifyLinked = !!spotifyIdentity;
-  const spotifyUsername = spotifyIdentity?.identity_data?.preferred_username || spotifyIdentity?.identity_data?.name || null;
-  const spotifyEmail = spotifyIdentity?.identity_data?.email || null;
 
   return (
     <main className="bg-background text-black min-h-screen pt-24 px-6 md:px-12">
@@ -37,12 +31,6 @@ export default async function SettingsPage() {
           initialEmail={user.email || ""}
           initialAvatarUrl={profile?.avatar_url || null}
           initialPrivacy={profile?.is_private ?? false}
-          isSpotifyLinked={isSpotifyLinked}
-          initialSpotifyUsername={spotifyUsername}
-          initialSpotifyEmail={spotifyEmail}
-          initialShowCurrentlyPlaying={profile?.show_currently_playing ?? true}
-          initialShowTopArtists={profile?.show_top_artists ?? true}
-          initialShowPlaylists={profile?.show_playlists ?? true}
           initialBio={profile?.bio || ""}
         />
       </div>

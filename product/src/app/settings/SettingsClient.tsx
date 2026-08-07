@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { updatePrivacy, updateUsername, deleteAccount, changePassword, updateSpotifyVisibility, updateTopArtistsVisibility, updatePlaylistsVisibility, updateBio } from "@/app/actions/settings";
+import { updatePrivacy, updateUsername, deleteAccount, changePassword, updateBio } from "@/app/actions/settings";
 import { AnimatePresence, motion } from "framer-motion";
 import AvatarUpload from "@/components/Avatar-Upload";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import PlaylistGrid from "@/components/spotify/PlaylistGrid";
 
 interface SettingsClientProps {
   userId: string;
@@ -14,16 +13,10 @@ interface SettingsClientProps {
   initialEmail: string;
   initialAvatarUrl: string | null;
   initialPrivacy: boolean;
-  isSpotifyLinked: boolean;
-  initialSpotifyUsername: string | null;
-  initialSpotifyEmail: string | null;
-  initialShowCurrentlyPlaying: boolean;
-  initialShowTopArtists: boolean;
-  initialShowPlaylists: boolean;
   initialBio: string;
 }
 
-type TabState = "ACCOUNT" | "SECURITY" | "PRIVACY" | "INTEGRATION";
+type TabState = "ACCOUNT" | "SECURITY" | "PRIVACY";
 
 export default function SettingsClient({
   userId,
@@ -31,19 +24,15 @@ export default function SettingsClient({
   initialEmail,
   initialAvatarUrl,
   initialPrivacy,
-  isSpotifyLinked,
-  initialSpotifyUsername,
-  initialSpotifyEmail,
-  initialShowCurrentlyPlaying,
-  initialShowTopArtists,
-  initialShowPlaylists,
   initialBio,
 }: SettingsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Navigation State
-  const initialTab = (searchParams.get("tab") as TabState) || "ACCOUNT";
+  const tabParam = searchParams.get("tab");
+  const validTabs: TabState[] = ["ACCOUNT", "SECURITY", "PRIVACY"];
+  const initialTab: TabState = validTabs.includes(tabParam as TabState) ? (tabParam as TabState) : "ACCOUNT";
   const [activeTab, setActiveTab] = useState<TabState>(initialTab);
 
   // Privacy State
@@ -79,14 +68,6 @@ export default function SettingsClient({
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showDeletePassword, setShowDeletePassword] = useState(false);
-
-  // Spotify
-  const [spotifyLinked, setSpotifyLinked] = useState(isSpotifyLinked);
-  const [spotifyUsername, setSpotifyUsername] = useState(initialSpotifyUsername);
-  const [showCurrentlyPlaying, setShowCurrentlyPlaying] = useState(initialShowCurrentlyPlaying);
-  const [showTopArtists, setShowTopArtists] = useState(initialShowTopArtists);
-  const [showPlaylists, setShowPlaylists] = useState(initialShowPlaylists);
-  const [isSpotifyLoading, setIsSpotifyLoading] = useState(false);
 
   const supabase = createClient();
 
@@ -126,69 +107,6 @@ export default function SettingsClient({
     } finally {
       setIsPrivacyLoading(false);
       setTimeout(() => setCooldown(false), 2500);
-    }
-  };
-
-  /**
-   * Toggle Spotify Visibility
-   */
-  const handleSpotifyVisibilityToggle = async () => {
-    setIsSpotifyLoading(true);
-    const newValue = !showCurrentlyPlaying;
-    setShowCurrentlyPlaying(newValue);
-
-    try {
-      await updateSpotifyVisibility(newValue);
-      window.dispatchEvent(new Event("profileUpdated"));
-      showToast(`SPOTIFY VISIBILITY: ${newValue ? "ON" : "OFF"}`, "success");
-    } catch (error) {
-      console.error("Failed to update Spotify visibility:", error);
-      setShowCurrentlyPlaying(!newValue);
-      showToast("FAILED TO UPDATE VISIBILITY.", "error");
-    } finally {
-      setIsSpotifyLoading(false);
-    }
-  };
-
-  /**
-   * Toggle Top Artists Visibility
-   */
-  const handleTopArtistsVisibilityToggle = async () => {
-    setIsSpotifyLoading(true);
-    const newValue = !showTopArtists;
-    setShowTopArtists(newValue);
-
-    try {
-      await updateTopArtistsVisibility(newValue);
-      window.dispatchEvent(new Event("profileUpdated"));
-      showToast(`TOP ARTISTS: ${newValue ? "VISIBLE" : "HIDDEN"}`, "success");
-    } catch (error) {
-      console.error("Failed to update top artists visibility:", error);
-      setShowTopArtists(!newValue);
-      showToast("FAILED TO UPDATE VISIBILITY.", "error");
-    } finally {
-      setIsSpotifyLoading(false);
-    }
-  };
-
-  /**
-   * Toggle Playlists Visibility
-   */
-  const handlePlaylistsVisibilityToggle = async () => {
-    setIsSpotifyLoading(true);
-    const newValue = !showPlaylists;
-    setShowPlaylists(newValue);
-
-    try {
-      await updatePlaylistsVisibility(newValue);
-      window.dispatchEvent(new Event("profileUpdated"));
-      showToast(`PLAYLISTS: ${newValue ? "VISIBLE" : "HIDDEN"}`, "success");
-    } catch (error) {
-      console.error("Failed to update playlists visibility:", error);
-      setShowPlaylists(!newValue);
-      showToast("FAILED TO UPDATE VISIBILITY.", "error");
-    } finally {
-      setIsSpotifyLoading(false);
     }
   };
 
@@ -319,9 +237,6 @@ export default function SettingsClient({
     }
   };
 
-  /**
-   * Delete Account
-   */
   const handleDeleteAccount = async () => {
     if (!deleteConfirmPassword) {
       setDeleteError("PASSWORD IS REQUIRED.");
@@ -345,66 +260,6 @@ export default function SettingsClient({
       console.error("Deletion failed:", error);
       showToast("AN UNEXPECTED ERROR OCCURRED.", "error");
       setIsDeleting(false);
-    }
-  };
-
-  /**
-   * Connect Spotify
-   */
-  const handleLinkSpotify = async () => {
-    setIsSpotifyLoading(true);
-
-    try {
-      // Explicitly use linkIdentity to attach Spotify to the existing session
-      const { data, error } = await supabase.auth.linkIdentity({
-        provider: "spotify",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/settings?tab=INTEGRATION")}`,
-          scopes: "user-read-currently-playing user-read-playback-state user-top-read user-read-email",
-          queryParams: {
-            show_dialog: "true",
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      console.error("Spotify Link Error:", error);
-      showToast("FAILED TO CONNECT SPOTIFY.", "error");
-      setIsSpotifyLoading(false);
-    }
-  };
-
-  /**
-   * Unlink Spotify
-   */
-  const handleUnlinkSpotify = async () => {
-    setIsSpotifyLoading(true);
-    try {
-      const { data } = await supabase.auth.getUserIdentities();
-      const spotifyIdentity = data?.identities?.find((id: any) => id.provider === "spotify");
-
-      if (!spotifyIdentity) {
-        showToast("NO SPOTIFY ACCOUNT FOUND.", "error");
-        return;
-      }
-
-      const { error } = await supabase.auth.unlinkIdentity(spotifyIdentity);
-
-      if (error) throw error;
-
-      setSpotifyLinked(false);
-      setSpotifyUsername(null);
-      showToast("SPOTIFY ACCOUNT UNLINKED.", "success");
-    } catch (error) {
-      console.error("Failed to unlink Spotify:", error);
-      showToast("FAILED TO DISCONNECT.", "error");
-    } finally {
-      setIsSpotifyLoading(false);
     }
   };
 
@@ -455,16 +310,6 @@ export default function SettingsClient({
             }`}
         >
           PRIVACY
-        </button>
-
-        <button
-          onClick={() => setActiveTab("INTEGRATION")}
-          className={`w-full text-left px-6 py-4 font-mono text-xs uppercase tracking-[0.2em] font-bold border-[3px] transition-all ${activeTab === "INTEGRATION"
-            ? "bg-black text-white border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]"
-            : "bg-white text-black border-black/20 hover:border-black/50 shadow-none hover:shadow-[2px_2px_0px_rgba(0,0,0,0.5)]"
-            }`}
-        >
-          INTEGRATION
         </button>
 
       </div>
@@ -834,131 +679,6 @@ export default function SettingsClient({
             </div>
           </div>
         )}
-
-        {/* INTEGRATION */}
-        {activeTab === "INTEGRATION" && (
-          <div className="flex flex-col w-full max-w-2xl animate-in fade-in duration-300">
-            <h2 className="text-2xl md:text-3xl font-black uppercase mb-8 border-b-[2px] border-black/10 pb-4">
-              Integration
-            </h2>
-
-            <div className="flex flex-col gap-8">
-              <div className={`p-8 md:p-12 flex flex-col items-center justify-center text-center transition-all ${spotifyLinked
-                ? "bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)]"
-                : "bg-neutral-50 border-[3px] border-black border-dashed"
-                }`}>
-
-                <div className="flex flex-col items-center justify-center mb-6">
-                  {isSpotifyLoading && <p className="font-mono text-[10px] text-black/40 animate-pulse">SYNCHRONIZING...</p>}
-                </div>
-
-                {spotifyLinked ? (
-                  <>
-                    <h3 className="text-2xl font-black uppercase tracking-tighter text-black mb-1">
-                      {spotifyUsername || "SPOTIFY_USER"}
-                    </h3>
-                    <p className="font-mono text-[10px] font-bold text-black/30 uppercase tracking-[0.2em] mb-8">
-                      {initialSpotifyEmail || "NO_EMAIL_FOUND"}
-                    </p>
-                    <button
-                      onClick={handleUnlinkSpotify}
-                      disabled={isSpotifyLoading}
-                      className="group border-[3px] border-black bg-white px-8 py-3 w-full max-w-xs font-mono font-bold text-xs uppercase tracking-[0.2em] shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-[#1DB954] hover:border-[#1DB954] hover:shadow-[4px_4px_0px_rgba(0,0,0,0.1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:text-white transition-all disabled:opacity-50"
-                    >
-                      {isSpotifyLoading ? "UNLINKING..." : "UNLINK ACCOUNT"}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <h3 className="text-2xl font-black uppercase tracking-tighter text-black mb-2">
-                      SPOTIFY
-                    </h3>
-                    <p className="font-mono text-xs font-bold text-black/40 uppercase tracking-[0.1em] mb-8 leading-relaxed max-w-xs mx-auto">
-                      LINK YOUR ACCOUNT.
-                    </p>
-                    <button
-                      onClick={handleLinkSpotify}
-                      disabled={isSpotifyLoading}
-                      className="bg-[#1DB954] text-black border-[3px] border-black px-8 py-4 w-full max-w-xs font-mono font-black text-sm uppercase tracking-[0.2em] shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                      {isSpotifyLoading ? "..." : "CONNECT"}
-                    </button>
-                  </>
-                )}
-              </div>
-
-              {/* Show Currently Playing Toggle */}
-              {spotifyLinked && (
-                <div className="flex items-center justify-between p-6 bg-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-                  <div className="flex flex-col gap-1">
-                    <h4 className="font-black uppercase text-sm tracking-tight">Show Currently Playing</h4>
-                  </div>
-
-                  <button
-                    onClick={handleSpotifyVisibilityToggle}
-                    disabled={isSpotifyLoading}
-                    className={`relative w-16 h-8 border-[3px] border-black transition-colors ${showCurrentlyPlaying ? "bg-[#1DB954]" : "bg-neutral-200"}`}
-                  >
-                    <motion.div
-                      animate={{ x: showCurrentlyPlaying ? 32 : 0 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="absolute top-[2px] left-[2px] w-6 h-6 bg-white border-[2px] border-black"
-                    />
-                  </button>
-                </div>
-              )}
-
-              {/* Show Top Artists Toggle */}
-              {spotifyLinked && (
-                <div className="flex items-center justify-between p-6 bg-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-                  <div className="flex flex-col gap-1">
-                    <h4 className="font-black uppercase text-sm tracking-tight">Show Top Artists</h4>
-                    <p className="font-mono text-[9px] text-black/40 uppercase tracking-widest">DISPLAY YOUR TOP SPOTIFY ARTISTS ON YOUR PROFILE</p>
-                  </div>
-
-                  <button
-                    onClick={handleTopArtistsVisibilityToggle}
-                    disabled={isSpotifyLoading}
-                    className={`relative w-16 h-8 border-[3px] border-black transition-colors ${showTopArtists ? "bg-[#1DB954]" : "bg-neutral-200"}`}
-                  >
-                    <motion.div
-                      animate={{ x: showTopArtists ? 32 : 0 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="absolute top-[2px] left-[2px] w-6 h-6 bg-white border-[2px] border-black"
-                    />
-                  </button>
-                </div>
-              )}
-
-              {/* Show Playlists Toggle */}
-              {spotifyLinked && (
-                <div className="flex items-center justify-between p-6 bg-white border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-                  <div className="flex flex-col gap-1">
-                    <h4 className="font-black uppercase text-sm tracking-tight">Show Playlists</h4>
-                    <p className="font-mono text-[9px] text-black/40 uppercase tracking-widest">DISPLAY YOUR PUBLISHED PLAYLISTS ON YOUR PROFILE</p>
-                  </div>
-
-                  <button
-                    onClick={handlePlaylistsVisibilityToggle}
-                    disabled={isSpotifyLoading}
-                    className={`relative w-16 h-8 border-[3px] border-black transition-colors ${showPlaylists ? "bg-[#1DB954]" : "bg-neutral-200"}`}
-                  >
-                    <motion.div
-                      animate={{ x: showPlaylists ? 32 : 0 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="absolute top-[2px] left-[2px] w-6 h-6 bg-white border-[2px] border-black"
-                    />
-                  </button>
-                </div>
-              )}
-              
-              {spotifyLinked && (
-                <PlaylistGrid userId={userId} />
-              )}
-            </div>
-          </div>
-        )}
-
 
       </div>
     </div>

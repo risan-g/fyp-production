@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const origin = requestUrl.origin;
   const next = requestUrl.searchParams.get("next") || "/";
 
-  // If Supabase/Spotify returned an error, redirect with the error message
+  // If Supabase returned an error, redirect with the error message
   if (error) {
     console.error(`[Auth Callback] Error from provider: ${error} - ${errorDescription}`);
     const errorRedirect = new URL(`${origin}${next}`);

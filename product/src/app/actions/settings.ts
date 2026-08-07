@@ -146,28 +146,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
   return { success: true };
 }
 
-/**
- * Toggles whether the user's Spotify currently playing is shown.
- */
-export async function updateSpotifyVisibility(show: boolean) {
-  const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) throw new Error("Not authenticated");
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ show_currently_playing: show })
-    .eq("id", user.id);
-
-  if (error) throw new Error(error.message);
-
-  revalidatePath("/settings");
-  revalidatePath("/profile");
-}
 /**
  * Update Bio
  */
@@ -194,51 +173,7 @@ export async function updateBio(bio: string) {
   revalidatePath("/profile");
 }
 
-/**
- * Toggles whether the user's top Spotify artists are shown on their profile.
- */
-export async function updateTopArtistsVisibility(show: boolean) {
-  const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) throw new Error("Not authenticated");
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ show_top_artists: show })
-    .eq("id", user.id);
-
-  if (error) throw new Error(error.message);
-
-  revalidatePath("/settings");
-  revalidatePath("/profile");
-}
-
-/**
- * Toggles whether the user's published playlists are shown on their profile.
- */
-export async function updatePlaylistsVisibility(show: boolean) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) throw new Error("Not authenticated");
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ show_playlists: show })
-    .eq("id", user.id);
-
-  if (error) throw new Error(error.message);
-
-  revalidatePath("/settings");
-  revalidatePath("/profile");
-}
 
 /**
  * Server Action: Update Avatar Path
