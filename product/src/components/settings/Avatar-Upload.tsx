@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { updateAvatarPath, removeAvatarUrl } from "@/app/actions/settings";
 
 interface AvatarProps {
   uid: string;
@@ -43,22 +44,15 @@ export default function AvatarUpload({
 
       if (uploadError) throw uploadError;
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      const result = await updateAvatarPath(filePath);
+      if (result.error) throw new Error(result.error);
 
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: publicUrl })
-        .eq("id", uid);
-
-      if (updateError) throw updateError;
-
-      setAvatarUrl(publicUrl);
+      setAvatarUrl(result.url!);
       router.refresh();
       window.dispatchEvent(new Event("profileUpdated"));
-    } catch (error: any) {
-      alert("Error uploading: " + error.message);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Unknown error";
+      alert("Error uploading: " + msg);
     } finally {
       setUploading(false);
     }
@@ -67,17 +61,16 @@ export default function AvatarUpload({
   const deleteAvatar = async () => {
     try {
       setUploading(true);
-      const { error } = await supabase
-        .from("profiles")
-        .update({ avatar_url: null })
-        .eq("id", uid);
 
-      if (error) throw error;
+      const result = await removeAvatarUrl();
+      if (result.error) throw new Error(result.error);
+
       setAvatarUrl(null);
       router.refresh();
       window.dispatchEvent(new Event("profileUpdated"));
-    } catch (error: any) {
-      alert("Error deleting: " + error.message);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Unknown error";
+      alert("Error deleting: " + msg);
     } finally {
       setUploading(false);
     }

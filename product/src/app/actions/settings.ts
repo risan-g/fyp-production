@@ -239,3 +239,79 @@ export async function updatePlaylistsVisibility(show: boolean) {
   revalidatePath("/settings");
   revalidatePath("/profile");
 }
+
+/**
+ * Server Action: Update Avatar Path
+ * Validates the storage path prefix and updates the profile's avatar URL.
+ */
+export async function updateAvatarPath(path: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Not authenticated" };
+
+  if (!path || typeof path !== "string") {
+    return { error: "Invalid path provided." };
+  }
+
+  // Validate the path starts with the user's ID
+  if (!path.startsWith(`${user.id}-`)) {
+    return { error: "Unauthorized path prefix." };
+  }
+
+  try {
+    // Derive public URL server-side
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("avatars").getPublicUrl(path);
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: publicUrl })
+      .eq("id", user.id);
+
+    if (updateError) throw updateError;
+
+    revalidatePath("/settings");
+    revalidatePath("/profile");
+
+    return { success: true, url: publicUrl };
+  } catch (err: unknown) {
+    console.error("updateAvatarPath error:", err);
+    return { error: err instanceof Error ? err.message : "Failed to update avatar." };
+  }
+}
+
+/**
+ * Server Action: Remove Avatar
+ * Clears the user's avatar_url from the profiles table.
+ */
+export async function removeAvatarUrl() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Not authenticated" };
+
+  try {
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: null })
+      .eq("id", user.id);
+
+    if (updateError) throw updateError;
+
+    revalidatePath("/settings");
+    revalidatePath("/profile");
+
+    return { success: true };
+  } catch (err: unknown) {
+    console.error("removeAvatarUrl error:", err);
+    return { error: err instanceof Error ? err.message : "Failed to remove avatar." };
+  }
+}
