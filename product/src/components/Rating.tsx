@@ -7,6 +7,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { saveRating, removeRating } from "@/app/actions/reviews";
 
 interface RatingProps {
   albumId: string;
@@ -161,30 +162,11 @@ export default function Rating({
     }
 
     setSaving(true);
+    setError("");
 
     try {
-      const { data: existing } = await supabase
-        .from("reviews")
-        .select("content")
-        .eq("user_id", user.id)
-        .eq("album_id", albumId)
-        .single();
-
-      if (existing && existing.content) {
-        // If a text review exists alongside the rating, we only nullify the rating.
-        await supabase
-          .from("reviews")
-          .update({ rating: null, updated_at: new Date().toISOString() })
-          .eq("user_id", user.id)
-          .eq("album_id", albumId);
-      } else {
-        // If no text review exists, we completely wipe the row to avoid dangling null records.
-        await supabase
-          .from("reviews")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("album_id", albumId);
-      }
+      const result = await removeRating(albumId);
+      if (result?.error) throw new Error(result.error);
 
       setRating(0);
       setOriginalRating(null);
@@ -193,6 +175,7 @@ export default function Rating({
       router.refresh();
     } catch (err: any) {
       console.error("Error removing rating:", err);
+      setError(err.message || "Failed to remove rating.");
     } finally {
       setSaving(false);
     }
@@ -210,30 +193,14 @@ export default function Rating({
     setError("");
 
     try {
-      const { data: existing } = await supabase
-        .from("reviews")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("album_id", albumId)
-        .single();
+      const result = await saveRating({
+        albumId,
+        albumName,
+        artistName,
+        albumImage
+      }, rating);
 
-      if (existing) {
-        const { error: updateError } = await supabase
-          .from("reviews")
-          .update({ rating, updated_at: new Date().toISOString() })
-          .eq("id", existing.id);
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase.from("reviews").insert({
-          user_id: user.id,
-          album_id: albumId,
-          album_name: albumName,
-          artist_name: artistName,
-          album_image_url: albumImage,
-          rating,
-        });
-        if (insertError) throw insertError;
-      }
+      if (result?.error) throw new Error(result.error);
 
       setOriginalRating(rating);
       userHasInteracted.current = false;

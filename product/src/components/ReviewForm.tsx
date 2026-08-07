@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { saveReview, removeReview } from "@/app/actions/reviews";
 
 interface ReviewFormProps {
   albumId: string;
@@ -65,33 +66,14 @@ export default function ReviewForm({
     setSaving(true);
 
     try {
-      const { data: existing } = await supabase
-        .from("reviews")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("album_id", albumId)
-        .single();
+      const result = await saveReview({
+        albumId,
+        albumName,
+        artistName,
+        albumImage
+      }, review);
 
-      if (existing) {
-        // Update content only
-        await supabase
-          .from("reviews")
-          .update({
-            content: review.trim(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existing.id);
-      } else {
-        await supabase.from("reviews").insert({
-          user_id: user.id,
-          album_id: albumId,
-          album_name: albumName,
-          artist_name: artistName,
-          album_image_url: albumImage,
-          content: review.trim(),
-          rating: null,
-        });
-      }
+      if (result?.error) throw new Error(result.error);
 
       setHasExistingReview(true);
       window.dispatchEvent(new CustomEvent("review-updated"));
@@ -109,29 +91,8 @@ export default function ReviewForm({
     setSaving(true);
 
     try {
-      // Check if rating exists
-      const { data: existing } = await supabase
-        .from("reviews")
-        .select("rating")
-        .eq("user_id", user.id)
-        .eq("album_id", albumId)
-        .single();
-
-      if (existing && existing.rating !== null) {
-        // Keep the row, just dlete the text
-        await supabase
-          .from("reviews")
-          .update({ content: null })
-          .eq("user_id", user.id)
-          .eq("album_id", albumId);
-      } else {
-        // Delete the whole row
-        await supabase
-          .from("reviews")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("album_id", albumId);
-      }
+      const result = await removeReview(albumId);
+      if (result?.error) throw new Error(result.error);
 
       setReview("");
       setHasExistingReview(false);
@@ -139,6 +100,7 @@ export default function ReviewForm({
       router.refresh();
     } catch (err) {
       console.error(err);
+      alert("Error deleting review.");
     } finally {
       setSaving(false);
     }
