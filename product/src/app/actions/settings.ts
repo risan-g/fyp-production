@@ -67,6 +67,41 @@ function firstIssueMessage(error: z.ZodError): string {
   return "Invalid input.";
 }
 
+/**
+ * Safely extract the avatar path from a public URL.
+ * Requires the URL to belong to the configured Supabase project and exact public avatars route,
+ * and only returns paths that start with the expected user ID namespace.
+ */
+function extractAvatarPath(url: string, userId: string): string | null {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl) return null;
+
+    const baseOrigin = new URL(supabaseUrl).origin;
+    const parsed = new URL(url);
+
+    if (parsed.origin !== baseOrigin) {
+      return null;
+    }
+
+    const publicPrefix = "/storage/v1/object/public/avatars/";
+    if (!parsed.pathname.startsWith(publicPrefix)) {
+      return null;
+    }
+
+    const rawPath = parsed.pathname.slice(publicPrefix.length);
+    if (!rawPath) return null;
+
+    const path = decodeURIComponent(rawPath);
+    if (path.startsWith(`${userId}-`)) {
+      return path;
+    }
+  } catch {
+    // Ignore invalid URLs
+  }
+  return null;
+}
+
 // --- Actions ---
 
 /**
@@ -160,6 +195,44 @@ export async function deleteAccount(password: unknown) {
 
   if (loginError) {
     return { error: "INCORRECT PASSWORD. DELETION CANNOT PROCEED." };
+  }
+
+  // Privileged Storage cleanup
+  try {
+    while (true) {
+      const { data: objects, error: listError } = await supabaseAdmin.storage
+        .from("avatars")
+        .list("", {
+          search: `${user.id}-`,
+          limit: 100,
+          offset: 0,
+        });
+
+      if (listError) throw listError;
+
+      if (!objects || objects.length === 0) {
+        break;
+      }
+
+      // Filter exactly to namespace prefix to prevent search fuzziness
+      const pathsToDelete = objects
+        .filter((obj) => obj.name.startsWith(`${user.id}-`))
+        .map((obj) => obj.name);
+
+      // If search returned objects but none match the exact prefix, break to prevent infinite loop
+      if (pathsToDelete.length === 0) {
+        break;
+      }
+
+      const { error: removeError } = await supabaseAdmin.storage
+        .from("avatars")
+        .remove(pathsToDelete);
+
+      if (removeError) throw removeError;
+    }
+  } catch (err) {
+    console.error("Failed to clean up avatar storage during account deletion:", err);
+    return { error: "SYSTEM FAILURE: FAILED TO CLEAN UP AVATAR FILES." };
   }
 
   // Perform the deletion
@@ -264,6 +337,13 @@ export async function updateAvatarPath(path: unknown) {
   }
 
   try {
+    // Read current avatar_url to clean it up afterwards
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .single();
+
     // Derive public URL server-side
     const {
       data: { publicUrl },
@@ -275,6 +355,18 @@ export async function updateAvatarPath(path: unknown) {
       .eq("id", user.id);
 
     if (updateError) throw updateError;
+
+    // Cleanup old avatar object securely
+    if (profile?.avatar_url) {
+      const oldPath = extractAvatarPath(profile.avatar_url, user.id);
+      if (oldPath && oldPath !== validPath) {
+        const { error: removeError } = await supabaseAdmin.storage.from("avatars").remove([oldPath]);
+        if (removeError) {
+          console.error("Failed to cleanup old avatar:", removeError);
+          // Do not fail the request, the new avatar is successfully saved
+        }
+      }
+    }
 
     revalidatePath("/settings");
     revalidatePath("/profile");
@@ -301,12 +393,29 @@ export async function removeAvatarUrl() {
   if (!user) return { error: "Not authenticated" };
 
   try {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .single();
+
     const { error: updateError } = await supabase
       .from("profiles")
       .update({ avatar_url: null })
       .eq("id", user.id);
 
     if (updateError) throw updateError;
+
+    // Cleanup old avatar object securely
+    if (profile?.avatar_url) {
+      const oldPath = extractAvatarPath(profile.avatar_url, user.id);
+      if (oldPath) {
+        const { error: removeError } = await supabaseAdmin.storage.from("avatars").remove([oldPath]);
+        if (removeError) {
+          console.error("Failed to cleanup avatar on removal:", removeError);
+        }
+      }
+    }
 
     revalidatePath("/settings");
     revalidatePath("/profile");
