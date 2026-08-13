@@ -1,5 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
+// --- Schemas (module-private) ---
+
+/**
+ * Hottest albums timeframe schema.
+ * Explicitly validates the finite set of allowed values.
+ * Uses .catch("24h") to exactly preserve the existing behaviour where
+ * missing, empty, or unknown values safely default to "24h" without returning an error.
+ */
+const timeframeSchema = z.enum(["24h", "week", "month", "year", "all"]).catch("24h");
 
 const RANGES: Record<string, number | null> = {
   "24h": 24,
@@ -16,8 +27,11 @@ const RANGES: Record<string, number | null> = {
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const range = url.searchParams.get("range") || "24h";
-  const hours = range in RANGES ? RANGES[range] : 24;
+  const rawRange = url.searchParams.get("range");
+
+  // Validation occurs before mapping to trusted hours
+  const range = timeframeSchema.parse(rawRange);
+  const hours = RANGES[range];
 
   const supabase = await createClient();
 

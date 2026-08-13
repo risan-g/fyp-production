@@ -1,5 +1,28 @@
 import { getSpotifyToken } from "@/lib/spotify";
 import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
+
+// --- Schemas (module-private) ---
+
+/**
+ * Search query schema.
+ * Preserves the exact previous trim/empty behavior (raw max -> trim -> min).
+ * max(500): TECHNICAL ANTI-ABUSE LIMIT to prevent arbitrarily large strings
+ * from reaching the Spotify API or Supabase, while remaining generous enough
+ * for any legitimate music search.
+ */
+const searchQuerySchema = z.string()
+  .max(500, "Search query is too long.")
+  .transform((s) => s.trim())
+  .pipe(z.string().min(1, "Search query is required."));
+
+/** Safely extract the first human-readable validation error message. */
+function firstIssueMessage(error: z.ZodError): string {
+  if (error.issues && error.issues.length > 0) {
+    return error.issues[0].message;
+  }
+  return "Invalid input.";
+}
 
 /**
  * GET Route Handler for Global Search.
@@ -7,11 +30,20 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const query = url.searchParams.get("q");
+  const rawQuery = url.searchParams.get("q") ?? "";
 
-  if (!query || !query.trim()) {
-    return Response.json([]);
+  const parsedQuery = searchQuerySchema.safeParse(rawQuery);
+
+  if (!parsedQuery.success) {
+    // If it failed because it was empty/whitespace (too_small), preserve existing default behaviour
+    if (parsedQuery.error.issues[0].code === "too_small") {
+      return Response.json([]);
+    }
+    // If it failed due to being too long, return 400 Bad Request
+    return Response.json({ error: firstIssueMessage(parsedQuery.error) }, { status: 400 });
   }
+
+  const query = parsedQuery.data;
 
   try {
     const supabase = await createClient();
