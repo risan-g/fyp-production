@@ -31,7 +31,7 @@ export async function getRotationList(userId: string, page: number = 0) {
     data: { user: currentUser },
   } = await supabase.auth.getUser();
 
-  let myFollowsSet = new Set<string>();
+  const myFollowsSet = new Set<string>();
 
   if (currentUser && artists.length > 0) {
     // Extract IDs from the fetched page to scope our check
@@ -81,10 +81,10 @@ export async function getSyncList(userId: string, page: number = 0) {
 
   const followingIds = follows.map((f) => f.following_id);
 
-  // Fetch the actual Profile Data
+  // Fetch the actual Profile Data (include is_private for SyncButton)
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url")
+    .select("id, username, avatar_url, is_private")
     .in("id", followingIds);
 
   if (profilesError) {
@@ -97,22 +97,26 @@ export async function getSyncList(userId: string, page: number = 0) {
     data: { user: currentUser },
   } = await supabase.auth.getUser();
 
-  let mySyncsSet = new Set<string>(); // I follow them
-  let followersSet = new Set<string>(); // They follow me
+  const mySyncsSet = new Set<string>(); // I follow them (accepted)
+  const myPendingSet = new Set<string>(); // I follow them (pending)
+  const followersSet = new Set<string>(); // They follow me
 
   if (currentUser) {
-    // Do I follow them?
+    // Do I follow them, and what is the status? (Critical for is_synced vs is_pending)
     const { data: mySyncs } = await supabase
       .from("follows")
-      .select("following_id")
+      .select("following_id, status")
       .eq("follower_id", currentUser.id)
       .in("following_id", followingIds);
 
     if (mySyncs) {
-      mySyncs.forEach((s) => mySyncsSet.add(s.following_id));
+      mySyncs.forEach((s) => {
+        if (s.status === "accepted") mySyncsSet.add(s.following_id);
+        else myPendingSet.add(s.following_id);
+      });
     }
 
-    // Do they follow me? (Critical for "SYNCED" vs "PENDING")
+    // Do they follow me? (Critical for "SYNCED" vs "SYNC BACK")
     const { data: theirSyncs } = await supabase
       .from("follows")
       .select("follower_id")
@@ -134,9 +138,13 @@ export async function getSyncList(userId: string, page: number = 0) {
         id: profile.id,
         username: profile.username,
         avatar_url: profile.avatar_url,
-        // Do I follow this person? (Used for <SyncButton /> state)
+        // Required by <SyncButton /> to handle private profile follow requests
+        is_private: profile.is_private ?? false,
+        // Do I follow this person with an accepted follow? (Used for <SyncButton /> state)
         is_synced: mySyncsSet.has(profile.id),
-        // Do they follow me? (Used to determine Sync vs Pending)
+        // Do I have a pending follow request to this person?
+        is_pending: myPendingSet.has(profile.id),
+        // Do they follow me? (Used to determine Sync vs Sync Back)
         is_following_me: followersSet.has(profile.id),
         // Prevents showing a 'Follow' button for yourself
         is_me: currentUser?.id === profile.id,

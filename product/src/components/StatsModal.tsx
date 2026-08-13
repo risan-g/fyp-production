@@ -237,7 +237,9 @@ export default function StatsModal({
                       <div className="scale-90 origin-right">
                         <SyncButton
                           targetUserId={user.id}
+                          isPrivate={user.is_private}
                           initialIsFollowing={user.is_synced}
+                          initialIsPending={user.is_pending}
                           isTargetFollowingMe={user.is_following_me}
                         />
                       </div>
