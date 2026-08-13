@@ -2,6 +2,14 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+// --- Schemas (module-private) ---
+const rotationSchema = z.object({
+  spotifyArtistId: z.string().min(1, "Artist ID is required.").max(200, "Artist ID is too long."),
+  artistName: z.string().trim().min(1, "Artist name is required.").max(300, "Artist name is too long."),
+  artistImageUrl: z.string().max(2048, "Image URL is too long.").nullable(),
+});
 
 /**
  * Server Action: Toggle Rotation
@@ -15,10 +23,17 @@ import { revalidatePath } from "next/cache";
  * on their profile without making slow API calls to Spotify.
  */
 export async function toggleRotation(
-  spotifyArtistId: string,
-  artistName: string,
-  artistImageUrl: string | null,
+  rawSpotifyArtistId: string,
+  rawArtistName: string,
+  rawArtistImageUrl: string | null,
 ) {
+  // 1. Validation
+  const { spotifyArtistId, artistName, artistImageUrl } = rotationSchema.parse({
+    spotifyArtistId: rawSpotifyArtistId,
+    artistName: rawArtistName,
+    artistImageUrl: rawArtistImageUrl,
+  });
+
   const supabase = await createClient();
 
   // Authentication Check

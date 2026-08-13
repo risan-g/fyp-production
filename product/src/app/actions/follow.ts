@@ -2,6 +2,10 @@
 
 import { createClient } from "../../lib/supabase/server"; // Ensure this path matches your structure
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+// --- Schemas (module-private) ---
+const userIdSchema = z.string().uuid("Invalid user ID.");
 
 /**
  * Server Action: Toggle Follow Status.
@@ -12,7 +16,10 @@ import { revalidatePath } from "next/cache";
  * 2. Removes an existing connection (Unfollow) if one is found.
  *
  */
-export async function toggleFollow(targetUserId: string) {
+export async function toggleFollow(rawTargetUserId: string) {
+  // 1. Validation
+  const targetUserId = userIdSchema.parse(rawTargetUserId);
+
   const supabase = await createClient();
 
   /**

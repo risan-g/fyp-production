@@ -1,6 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
+
+// --- Schemas (module-private) ---
+const userIdSchema = z.string().uuid("Invalid user ID.");
+const pageSchema = z.number().int().min(0, "Page cannot be negative.").max(10000, "Page is too large.");
 
 // Batch size for the Infinite Scroll.
 const PAGE_SIZE = 10;
@@ -8,7 +13,11 @@ const PAGE_SIZE = 10;
 /**
  * Fetch a page of artists for the Rotation list.
  */
-export async function getRotationList(userId: string, page: number = 0) {
+export async function getRotationList(rawUserId: string, rawPage: number = 0) {
+  // 1. Validation
+  const userId = userIdSchema.parse(rawUserId);
+  const page = pageSchema.parse(rawPage);
+
   const supabase = await createClient();
 
   const from = page * PAGE_SIZE;
@@ -59,7 +68,11 @@ export async function getRotationList(userId: string, page: number = 0) {
 /**
  * Fetch a page of users for the Sync list.
  */
-export async function getSyncList(userId: string, page: number = 0) {
+export async function getSyncList(rawUserId: string, rawPage: number = 0) {
+  // 1. Validation
+  const userId = userIdSchema.parse(rawUserId);
+  const page = pageSchema.parse(rawPage);
+
   const supabase = await createClient();
 
   const from = page * PAGE_SIZE;

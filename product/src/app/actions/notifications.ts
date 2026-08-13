@@ -2,6 +2,10 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+// --- Schemas (module-private) ---
+const userIdSchema = z.string().uuid("Invalid user ID.");
 
 /**
  * Fetch "Sync Requests"
@@ -59,7 +63,10 @@ export async function getSyncRequests() {
  * Action: Removes the target user from your followers list.
  * @param targetUserId The ID of the user who requested to follow you
  */
-export async function declineSyncRequest(targetUserId: string) {
+export async function declineSyncRequest(rawTargetUserId: string) {
+  // 1. Validation
+  const targetUserId = userIdSchema.parse(rawTargetUserId);
+
   const supabase = await createClient();
   const {
     data: { user },
