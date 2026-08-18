@@ -15,7 +15,7 @@ export default function FeedToggle({ activeFeed, onChange }: FeedToggleProps) {
                     : "bg-transparent text-black hover:bg-black/5"
                     }`}
             >
-                "GLOBAL"
+                &quot;GLOBAL&quot;
             </button>
 
             <button
@@ -25,7 +25,7 @@ export default function FeedToggle({ activeFeed, onChange }: FeedToggleProps) {
                     : "bg-transparent text-black hover:bg-black/5"
                     }`}
             >
-                "SYNCED"
+                &quot;SYNCED&quot;
             </button>
         </div>
     );

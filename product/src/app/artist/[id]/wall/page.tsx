@@ -10,6 +10,29 @@ async function fetchArtist(id: string) {
   return await fetchSpotifyData(`https://api.spotify.com/v1/artists/${id}`);
 }
 
+interface PostVote {
+  vote_type: number;
+  user_id: string;
+}
+
+interface PostWithRelations {
+  id: string;
+  wall_id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  profiles: { username: string; avatar_url: string | null } | null;
+  votes: PostVote[];
+  comments: { count: number }[];
+}
+
+export interface WallFeedPost extends PostWithRelations {
+  score: number;
+  userVote: 1 | -1 | 0;
+  replyCount: number;
+}
+
 /**
  * THE WALL PAGE
  */
@@ -31,7 +54,7 @@ export default async function WallPage({
 
   if (!artist || artist.error) return notFound();
 
-  let postsData: any[] = [];
+  let postsData: WallFeedPost[] = [];
 
   if (wall) {
     // Fetch all posts with their profiles, votes, and comment count
@@ -48,9 +71,10 @@ export default async function WallPage({
 
     // Process the data for dB scores and engagement
     if (posts) {
-      postsData = posts.map((post: any) => {
-        const score = post.votes?.reduce((acc: number, v: any) => acc + v.vote_type, 0) || 0;
-        const userVote = post.votes?.find((v: any) => v.user_id === currentUser?.id)?.vote_type || 0;
+      const rawPosts = posts as unknown as PostWithRelations[];
+      postsData = rawPosts.map((post) => {
+        const score = post.votes?.reduce((acc: number, v: PostVote) => acc + v.vote_type, 0) || 0;
+        const userVote = (post.votes?.find((v: PostVote) => v.user_id === currentUser?.id)?.vote_type || 0) as 1 | -1 | 0;
         const replyCount = post.comments?.[0]?.count || 0;
         return { ...post, score, userVote, replyCount };
       });

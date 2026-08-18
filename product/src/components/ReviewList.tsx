@@ -15,6 +15,18 @@ const timeAgo = (date: string) => {
   return `${days}d ago`;
 };
 
+interface ReviewItem {
+  id: string;
+  content: string | null;
+  rating: number | null;
+  created_at: string;
+  user_id: string;
+  profiles: {
+    username: string;
+    avatar_url: string | null;
+  } | null;
+}
+
 /**
  * Review List Component.
  *
@@ -23,7 +35,7 @@ const timeAgo = (date: string) => {
  */
 export default function ReviewList({ albumId }: { albumId: string }) {
   const supabase = createClient();
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
 
   // Fetch data when the component loads
   useEffect(() => {
@@ -42,7 +54,7 @@ export default function ReviewList({ albumId }: { albumId: string }) {
         .neq("content", "")
         .order("created_at", { ascending: false });
 
-      if (data) setReviews(data);
+      if (data) setReviews(data as unknown as ReviewItem[]);
     };
 
     fetchData();
@@ -54,7 +66,7 @@ export default function ReviewList({ albumId }: { albumId: string }) {
 
     window.addEventListener("review-updated", handleUpdate);
     return () => window.removeEventListener("review-updated", handleUpdate);
-  }, [albumId]);
+  }, [albumId, supabase]);
 
   // If there are no reviews, show a simple message
   if (reviews.length === 0)
@@ -69,7 +81,7 @@ export default function ReviewList({ albumId }: { albumId: string }) {
       <div className="flex items-center gap-4 mb-8">
         <h2 className="text-sm text-black font-mono font-bold uppercase tracking-[0.2em] flex items-center gap-2">
           <span className="w-2 h-2 bg-accent-red flex-shrink-0"></span>
-          "COMMUNITY REVIEWS"
+          &quot;COMMUNITY REVIEWS&quot;
         </h2>
       </div>
       <div className="space-y-12">
@@ -116,7 +128,7 @@ export default function ReviewList({ albumId }: { albumId: string }) {
 
               {/* The Review Content */}
               <div className="relative">
-                <div className="absolute -top-3 left-4 bg-white px-2 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-accent-red">"REVIEW"</div>
+                <div className="absolute -top-3 left-4 bg-white px-2 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-accent-red">&quot;REVIEW&quot;</div>
                 <p className="text-black text-lg font-serif leading-relaxed whitespace-pre-wrap max-w-4xl border-[2px] border-black p-6 bg-neutral-50 shadow-inner">
                   {review.content}
                 </p>

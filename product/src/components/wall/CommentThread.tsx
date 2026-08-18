@@ -1,9 +1,25 @@
 "use client";
 
-import CommentNode from "./CommentNode";
+import CommentNode, { CommentData } from "./CommentNode";
+
+export interface FlatComment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  parent_id: string | null;
+  content: string;
+  created_at: string;
+  is_voided?: boolean;
+  score?: number;
+  userVote?: 1 | -1 | 0;
+  profiles: {
+    username: string;
+    avatar_url: string | null;
+  } | null;
+}
 
 interface CommentThreadProps {
-  comments: any[];
+  comments: FlatComment[];
   spotifyArtistId: string;
   currentUserId?: string;
 }
@@ -11,9 +27,9 @@ interface CommentThreadProps {
 /**
  * Converts a flat array of comments from Supabase into a nested tree, using a highly efficient O(n) algorithm using a Map for lookups.
  */
-function buildCommentTree(flatComments: any[]) {
-  const commentMap = new Map();
-  const tree: any[] = [];
+function buildCommentTree(flatComments: FlatComment[]): CommentData[] {
+  const commentMap = new Map<string, CommentData>();
+  const tree: CommentData[] = [];
 
   // Initialise the map with copies of the comments and empty children arrays
   flatComments.forEach(comment => {
@@ -23,8 +39,9 @@ function buildCommentTree(flatComments: any[]) {
   // Distribute comments into their parents' children arrays, or the root tree
   flatComments.forEach(comment => {
     const node = commentMap.get(comment.id);
+    if (!node) return;
     if (comment.parent_id && commentMap.has(comment.parent_id)) {
-      commentMap.get(comment.parent_id).children.push(node);
+      commentMap.get(comment.parent_id)?.children?.push(node);
     } else {
       tree.push(node);
     }
@@ -52,7 +69,7 @@ export default function CommentThread({ comments, spotifyArtistId, currentUserId
       <div className="flex items-center gap-2 mb-8">
         <div className="w-2 h-2 bg-black"></div>
         <h3 className="font-mono font-bold text-xs uppercase tracking-[0.3em] text-black">
-          "THE CONVERSATION" ({comments.length} NOISES)
+          &quot;THE CONVERSATION&quot; ({comments.length} NOISES)
         </h3>
       </div>
 

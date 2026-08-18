@@ -20,8 +20,8 @@ export default function DeletePostButton({ postId, spotifyArtistId }: { postId: 
     try {
       await deletePost(postId, spotifyArtistId);
       router.push(`/artist/${spotifyArtistId}/wall`);
-    } catch (err: any) {
-      alert(err.message || "Failed to delete post.");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to delete post.");
       setDeleting(false);
     }
   };

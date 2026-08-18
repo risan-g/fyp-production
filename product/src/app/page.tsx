@@ -35,8 +35,26 @@ export default async function Home() {
     username = profile?.username;
   }
 
+interface TopAlbumAgg {
+  album_id: string;
+  name: string;
+  artist: string;
+  image: string | null;
+  logCount: number;
+  totalRating: number;
+  ratingCount: number;
+}
+
+interface ReviewRow {
+  album_id: string;
+  album_name: string;
+  artist_name: string;
+  album_image_url: string | null;
+  rating: number | null;
+}
+
   // Get the #1 hottest album for the hero section with new fall back system.
-  let topAlbum: any = null;
+  let topAlbum: TopAlbumAgg | null = null;
   const tryRanges = [24, 24 * 7, 24 * 30, 24 * 365, null];
   for (const hours of tryRanges) {
     let q = supabase
@@ -50,13 +68,27 @@ export default async function Home() {
     }
     const { data } = await q;
     if (data && data.length > 0) {
-      const agg: Record<string, any> = {};
-      data.forEach((r: any) => {
-        if (!agg[r.album_id]) agg[r.album_id] = { album_id: r.album_id, name: r.album_name, artist: r.artist_name, image: r.album_image_url, logCount: 0, totalRating: 0, ratingCount: 0 };
+      const agg: Record<string, TopAlbumAgg> = {};
+      const rows = data as unknown as ReviewRow[];
+      rows.forEach((r) => {
+        if (!agg[r.album_id]) {
+          agg[r.album_id] = {
+            album_id: r.album_id,
+            name: r.album_name,
+            artist: r.artist_name,
+            image: r.album_image_url,
+            logCount: 0,
+            totalRating: 0,
+            ratingCount: 0,
+          };
+        }
         agg[r.album_id].logCount++;
-        if (r.rating !== null) { agg[r.album_id].totalRating += r.rating; agg[r.album_id].ratingCount++; }
+        if (r.rating !== null) {
+          agg[r.album_id].totalRating += r.rating;
+          agg[r.album_id].ratingCount++;
+        }
       });
-      topAlbum = Object.values(agg).sort((a: any, b: any) => b.logCount - a.logCount)[0];
+      topAlbum = Object.values(agg).sort((a, b) => b.logCount - a.logCount)[0] || null;
       break;
     }
   }
@@ -118,7 +150,7 @@ export default async function Home() {
 
                 <div className="flex justify-between items-end border-b-[4px] border-black pb-4 mb-6">
                   <span className="text-black font-mono font-black uppercase tracking-[0.2em] text-lg">
-                    "HOTTEST RIGHT NOW"
+                    &quot;HOTTEST RIGHT NOW&quot;
                   </span>
                   <span className="text-black/50 font-mono text-xs uppercase tracking-widest font-bold">{topAlbum.logCount} LOGS</span>
                 </div>

@@ -39,6 +39,15 @@ async function fetchAlbums(id: string) {
   );
 }
 
+interface SpotifyAlbumSummary {
+  id: string;
+  name: string;
+  album_type: string;
+  total_tracks: number;
+  images?: { url: string }[];
+  release_date?: string;
+}
+
 /**
  * Artist Page (Server Component)
  * Acts as the primary profile view for an artist, displaying metadata,
@@ -90,20 +99,22 @@ export default async function ArtistPage({
   const isInRotation =
     userStatusRes.status === "fulfilled" && !!userStatusRes.value.data;
 
+  const albumItems = (rawAlbums || []) as SpotifyAlbumSummary[];
+
   const uniqueAlbums = Array.from(
-    new Map(rawAlbums.map((a: any) => [a.name, a])).values(),
+    new Map(albumItems.map((a) => [a.name, a])).values(),
   );
 
   const discography = {
-    albums: uniqueAlbums.filter((a: any) => a.album_type === "album"),
+    albums: uniqueAlbums.filter((a) => a.album_type === "album"),
     eps: uniqueAlbums.filter(
-      (a: any) => a.album_type === "single" && a.total_tracks > 3,
+      (a) => a.album_type === "single" && a.total_tracks > 3,
     ),
     singles: uniqueAlbums.filter(
-      (a: any) => a.album_type === "single" && a.total_tracks <= 3,
+      (a) => a.album_type === "single" && a.total_tracks <= 3,
     ),
     compilations: uniqueAlbums.filter(
-      (a: any) => a.album_type === "compilation",
+      (a) => a.album_type === "compilation",
     ),
   };
 

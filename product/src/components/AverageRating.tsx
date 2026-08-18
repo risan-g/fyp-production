@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 interface AverageRatingProps {
@@ -17,22 +17,9 @@ export default function AverageRating({ albumId }: AverageRatingProps) {
 
   // State to hold the calculated score
   const [averageRating, setAverageRating] = useState<number | null>(null);
-  const [totalRatings, setTotalRatings] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Fetch the data as soon as the component loads
-  useEffect(() => {
-    loadAverageRating();
-
-    const handleUpdate = () => {
-      loadAverageRating();
-    };
-
-    window.addEventListener("review-updated", handleUpdate);
-    return () => window.removeEventListener("review-updated", handleUpdate);
-  }, [albumId]);
-
-  const loadAverageRating = async () => {
+  const loadAverageRating = useCallback(async () => {
     try {
       // Get aLL ratings for this album from the 'reviews' table.
       const { data: allRatings, error: ratingsError } = await supabase
@@ -53,20 +40,31 @@ export default function AverageRating({ albumId }: AverageRatingProps) {
 
         // Round to 1 decimal place
         setAverageRating(Math.round(avg * 10) / 10);
-        setTotalRatings(allRatings.length);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error loading community rating:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [albumId, supabase]);
+
+  // Fetch the data as soon as the component loads
+  useEffect(() => {
+    loadAverageRating();
+
+    const handleUpdate = () => {
+      loadAverageRating();
+    };
+
+    window.addEventListener("review-updated", handleUpdate);
+    return () => window.removeEventListener("review-updated", handleUpdate);
+  }, [loadAverageRating]);
 
   return (
     <div className="flex flex-col items-end relative group">
       {/* Top Label */}
       <span className="text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em] mb-[-15px] z-10 mr-4 bg-white px-2 border-[2px] border-black">
-        "AVERAGE RATING"
+        &quot;AVERAGE RATING&quot;
       </span>
 
       {/* The Big Score Number */}

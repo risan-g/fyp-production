@@ -27,8 +27,8 @@ export default function SignInPage() {
       if (signInError) throw signInError;
       router.push("/");
       router.refresh();
-    } catch (err: any) {
-      if (err.message === "Email not confirmed") {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === "Email not confirmed") {
         setError("PLEASE CONFIRM YOUR EMAIL ADDRESS TO SIGN IN.");
       } else {
         setError("Invalid email or password.");
@@ -113,7 +113,7 @@ export default function SignInPage() {
 
           <div className="mt-8 pt-6 border-t-[2px] border-black/10 text-center">
             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-black/50">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/sign-up"
                 className="font-bold text-black hover:text-accent-red transition-colors underline underline-offset-4 decoration-2"

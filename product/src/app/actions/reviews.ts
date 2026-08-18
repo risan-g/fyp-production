@@ -16,7 +16,7 @@ import { z } from "zod";
  *   artistName max 500 — generous ceiling; no existing product limit
  *   albumImage max 2000 — generous ceiling for URLs; empty string permitted as existing fallback
  */
-export const albumDataSchema = z.object({
+const albumDataSchema = z.object({
   albumId: z.string().trim().min(1, "Album ID is required").max(500),
   albumName: z.string().trim().min(1, "Album name is required").max(500),
   artistName: z.string().trim().min(1, "Artist name is required").max(500),

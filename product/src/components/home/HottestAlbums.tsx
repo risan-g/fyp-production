@@ -36,7 +36,6 @@ export default function HottestAlbums() {
   const [activeRange, setActiveRange] = useState<Range>("24h");
   const [albums, setAlbums] = useState<Album[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasAutoFallen, setHasAutoFallen] = useState(false);
 
   const fetchAlbums = useCallback(async (range: Range) => {
     setIsLoading(true);
@@ -63,7 +62,6 @@ export default function HottestAlbums() {
           break;
         }
       }
-      setHasAutoFallen(true);
     };
     autoFallback();
   }, [fetchAlbums]);
@@ -81,7 +79,7 @@ export default function HottestAlbums() {
       <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b-[3px] border-black">
         <h3 className="font-mono text-sm uppercase tracking-widest text-black flex items-center gap-2 font-bold">
           <Star className="w-5 h-5 text-accent-red fill-accent-red" />
-          "HOTTEST"
+          &quot;HOTTEST&quot;
         </h3>
       </div>
 

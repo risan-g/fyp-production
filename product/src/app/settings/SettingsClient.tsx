@@ -575,7 +575,7 @@ export default function SettingsClient({
 
                   <div className="flex flex-col gap-4">
                     <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none text-black">
-                      WAIT, DON'T<br />LEAVE US.
+                      WAIT, DON&apos;T<br />LEAVE US.
                     </h2>
                     <p className="font-mono text-xs font-bold text-black/40 uppercase tracking-[0.2em] leading-relaxed max-w-sm">
                       DELETING YOUR ACCOUNT IS IRREVERSIBLE. ALL REVIEWS, RATINGS, AND SOCIAL DATA WILL BE PURGED FROM OUR SERVERS IN PERPETUITY.

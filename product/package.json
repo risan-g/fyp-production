@@ -6,7 +6,11 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:e2e": "cypress run",
+    "test:e2e:smoke": "cypress run --spec cypress/e2e/smoke.cy.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

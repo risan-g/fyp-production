@@ -23,7 +23,7 @@ export default async function SettingsPage() {
     <main className="bg-background text-black min-h-screen pt-24 px-6 md:px-12">
       <div className="max-w-[1200px] mx-auto flex flex-col pt-12">
         <h1 className="text-6xl font-serif font-black uppercase tracking-tighter mb-12 border-b-[4px] border-black pb-6">
-          "SETTINGS"
+          &quot;SETTINGS&quot;
         </h1>
         <SettingsClient
           userId={profile?.id || ""}

@@ -2,17 +2,13 @@
 
 import { useState } from "react";
 
-interface ShareButtonProps {
-  username: string;
-}
-
 /**
  * ShareButton (Client Component)
  *
  * Provides a "Copy Link" feature with instant visual feedback.
  * Uses the navigator.clipboard API to copy the current profile URL.
  */
-export default function ShareButton({ username }: ShareButtonProps) {
+export default function ShareButton({}: { username?: string } = {}) {
   const [copied, setCopied] = useState(false);
 
   /**

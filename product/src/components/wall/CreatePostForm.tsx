@@ -20,8 +20,8 @@ export default function CreatePostForm({ spotifyArtistId, onClose }: { spotifyAr
       setTitle("");
       setContent("");
       if (onClose) onClose();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to create post.");
     } finally {
       setSaving(false);
     }
@@ -42,7 +42,7 @@ export default function CreatePostForm({ spotifyArtistId, onClose }: { spotifyAr
       <div className="border-b-[2px] border-black pb-2 mb-2 flex items-center gap-2">
 
         <span className="w-2 h-2 bg-accent-red flex-shrink-0"></span>
-        <h3 className="text-black font-mono font-bold uppercase tracking-[0.2em] text-sm">"MAKE SOME NOISE"</h3>
+        <h3 className="text-black font-mono font-bold uppercase tracking-[0.2em] text-sm">&quot;MAKE SOME NOISE&quot;</h3>
       </div>
 
       <input

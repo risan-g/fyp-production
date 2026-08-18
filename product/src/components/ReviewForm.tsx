@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { saveReview, removeReview } from "@/app/actions/reviews";
+import { User } from "@supabase/supabase-js";
 
 interface ReviewFormProps {
   albumId: string;
@@ -26,7 +27,7 @@ export default function ReviewForm({
   const supabase = createClient();
 
   const [review, setReview] = useState("");
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasExistingReview, setHasExistingReview] = useState(false);
@@ -50,12 +51,18 @@ export default function ReviewForm({
         if (existing && existing.content) {
           setReview(existing.content);
           setHasExistingReview(true);
+        } else {
+          setReview("");
+          setHasExistingReview(false);
         }
+      } else {
+        setReview("");
+        setHasExistingReview(false);
       }
       setLoading(false);
     };
     loadData();
-  }, [albumId]);
+  }, [albumId, supabase]);
 
   const handleSave = async () => {
     // If not logged in, redirect to the sign-in page
@@ -112,7 +119,7 @@ export default function ReviewForm({
     <div className="border-[3px] border-black p-6 bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)] flex flex-col gap-4">
       <div className="flex justify-between items-center border-b-[2px] border-black/10 pb-4">
         <label className="text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em]">
-          {user ? '"YOUR REVIEW"' : '"REVIEW THIS ALBUM"'}
+          {user ? '&quot;YOUR REVIEW&quot;' : '&quot;REVIEW THIS ALBUM&quot;'}
         </label>
       </div>
 

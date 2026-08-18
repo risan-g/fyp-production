@@ -28,7 +28,6 @@ export default function DBControl({
   initialUserVote,
   spotifyArtistId,
 }: DBControlProps) {
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const [currentScore, setCurrentScore] = useState(initialScore);
@@ -55,8 +54,8 @@ export default function DBControl({
     // Background Database Update
     try {
       await toggleVote(entityId, entityType, value, spotifyArtistId);
-    } catch (e: any) {
-      if (e.message.includes("logged in")) {
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message.includes("logged in")) {
         router.push("/sign-in");
       } else {
         // Revert on error

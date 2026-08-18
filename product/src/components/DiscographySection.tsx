@@ -18,6 +18,14 @@ function doomTransform(text: string): string {
   return text.toLowerCase();
 }
 
+export interface DiscographyItem {
+  id: string;
+  name: string;
+  images?: { url: string }[];
+  release_date?: string;
+  total_tracks: number;
+}
+
 /**
  * DiscographySection Component
  * Renders a categorised grid of albums (e.g., Albums, EPs, or Singles).
@@ -29,7 +37,7 @@ export default function DiscographySection({
   easterEgg,
 }: {
   title: string;
-  items: any[];
+  items: DiscographyItem[];
   easterEgg?: "q" | "doom";
 }) {
   const [showAll, setShowAll] = useState(false);
@@ -49,7 +57,7 @@ export default function DiscographySection({
       <div className="flex justify-between items-center mb-6 pb-2 border-b-[2px] border-black/10">
         <h2 className={`text-sm text-black font-mono font-bold tracking-[0.2em] flex items-center gap-2 ${noUppercase ? "" : "uppercase"}`}>
           <span className="w-2 h-2 bg-accent-red flex-shrink-0"></span>
-          "{title}"
+          &quot;{title}&quot;
         </h2>
 
         {items.length > 5 && (
@@ -70,7 +78,7 @@ export default function DiscographySection({
             className="group border-[3px] border-black bg-white hover:bg-neutral-50 hover:shadow-[8px_8px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all flex flex-col"
           >
             <div className="w-full aspect-square border-b-[3px] border-black overflow-hidden relative bg-neutral-100">
-              {album.images[0] ? (
+              {album.images?.[0]?.url ? (
                 <img
                   src={album.images[0].url}
                   alt={album.name}
@@ -87,7 +95,7 @@ export default function DiscographySection({
               </p>
               <div className="flex-grow"></div>
               <p className={`text-[10px] font-mono text-black/50 font-bold tracking-[0.2em] mt-3 pt-3 border-t-[2px] border-black/10 ${noUppercase ? "" : "uppercase"}`}>
-                {album.release_date.substring(0, 4)}
+                {album.release_date ? album.release_date.substring(0, 4) : ""}
               </p>
             </div>
           </Link>

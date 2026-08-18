@@ -12,12 +12,12 @@ export default function GlobalReplyForm({ postId, spotifyArtistId }: { postId: s
     setIsSubmitting(true);
     try {
       // pass null for parentId to make it a top level comment
-      await createComment(postId, null as any, content, spotifyArtistId);
+      await createComment(postId, null, content, spotifyArtistId);
       setContent("");
       // optionally router.refresh() if not already handled
       window.location.reload();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to post reply.");
     } finally {
       setIsSubmitting(false);
     }

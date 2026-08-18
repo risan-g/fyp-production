@@ -6,8 +6,24 @@ import { createComment, voidComment } from "@/app/actions/wall";
 import ConfirmModal from "@/components/ConfirmModal";
 import FormattedText from "./FormattedText";
 
+export interface CommentData {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  is_voided?: boolean;
+  score?: number;
+  userVote?: 1 | -1 | 0;
+  profiles: {
+    username: string;
+    avatar_url: string | null;
+  } | null;
+  children?: CommentData[];
+}
+
 interface CommentNodeProps {
-  comment: any;
+  comment: CommentData;
   spotifyArtistId: string;
   currentUserId?: string;
   depth?: number;
@@ -30,8 +46,8 @@ export default function CommentNode({ comment, spotifyArtistId, currentUserId, d
       await createComment(comment.post_id, comment.id, replyContent, spotifyArtistId);
       setReplyContent("");
       setIsReplying(false);
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to post reply.");
     } finally {
       setIsSubmitting(false);
     }
@@ -128,8 +144,8 @@ export default function CommentNode({ comment, spotifyArtistId, currentUserId, d
                     setIsVoiding(true);
                     try {
                       await voidComment(comment.id, spotifyArtistId);
-                    } catch (err: any) {
-                      alert(err.message || "Failed to void comment.");
+                    } catch (err: unknown) {
+                      alert(err instanceof Error ? err.message : "Failed to void comment.");
                     } finally {
                       setIsVoiding(false);
                     }
@@ -166,7 +182,7 @@ export default function CommentNode({ comment, spotifyArtistId, currentUserId, d
       {/* THE RECURSION */}
       {!isCollapsed && comment.children && comment.children.length > 0 && (
         <div className="flex flex-col">
-          {comment.children.map((child: any) => (
+          {comment.children.map((child: CommentData) => (
           <CommentNode
               key={child.id}
               comment={child}

@@ -47,7 +47,15 @@ const privacySchema = z.boolean({ error: "Privacy value must be a boolean." });
  * Technical anti-abuse max: 1000 chars (generous ceiling for storage paths).
  * Classification: TECHNICAL ANTI-ABUSE (shape guard only; ownership check remains explicit).
  */
-const avatarPathSchema = z.string().trim().min(1, "Invalid path provided.").max(1000);
+const avatarPathSchema = z
+  .string()
+  .trim()
+  .min(1, "Invalid path provided.")
+  .max(1000)
+  .regex(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-\d+\.(jpg|jpeg|png|webp)$/i,
+    "Invalid avatar path format or unsupported extension."
+  );
 
 /**
  * Password schema.

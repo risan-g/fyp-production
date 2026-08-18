@@ -14,6 +14,26 @@ interface StatsModalProps {
   onClose: () => void;
 }
 
+interface RotationListItem {
+  spotify_artist_id: string;
+  artist_name: string;
+  artist_image_url: string | null;
+  is_in_my_rotation: boolean;
+}
+
+interface SyncListItem {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  is_private: boolean;
+  is_synced: boolean;
+  is_pending: boolean;
+  is_following_me: boolean;
+  is_me: boolean;
+}
+
+type ModalItem = RotationListItem | SyncListItem;
+
 /**
  * StatsModal (Client Component)
  *
@@ -26,7 +46,7 @@ export default function StatsModal({
 }: StatsModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
 
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<ModalItem[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -75,11 +95,11 @@ export default function StatsModal({
       setLoading(true);
 
       try {
-        let result: any[] = [];
+        let result: ModalItem[] = [];
         if (activeTab === "rotation") {
-          result = await getRotationList(userId, page);
+          result = (await getRotationList(userId, page)) as RotationListItem[];
         } else {
-          result = await getSyncList(userId, page);
+          result = (await getSyncList(userId, page)) as SyncListItem[];
         }
 
         if (isCancelled) return;
@@ -118,7 +138,7 @@ export default function StatsModal({
               : "text-black hover:bg-neutral-200"
               }`}
           >
-            "SYNCS"
+            &quot;SYNCS&quot;
           </button>
           <button
             onClick={() => setActiveTab("rotation")}
@@ -127,7 +147,7 @@ export default function StatsModal({
               : "text-black hover:bg-neutral-200"
               }`}
           >
-            "ROTATION"
+            &quot;ROTATION&quot;
           </button>
 
           <button
@@ -141,7 +161,7 @@ export default function StatsModal({
         <div className="flex-1 overflow-y-auto p-0 custom-scrollbar min-h-[300px]">
           {activeTab === "rotation" && (
             <div className="flex flex-col">
-              {items.map((artist, index) => (
+              {(items as RotationListItem[]).map((artist, index) => (
                 <div
                   key={`${artist.spotify_artist_id}-${index}`}
                   className="group grid grid-cols-[auto_1fr_auto] items-center gap-6 p-4 border-b-[2px] border-black/10 hover:bg-neutral-100 transition-colors last:border-b-0"
@@ -194,7 +214,7 @@ export default function StatsModal({
           {/* --- VIEW: SYNCS --- */}
           {activeTab === "syncs" && (
             <div className="flex flex-col">
-              {items.map((user, index) => (
+              {(items as SyncListItem[]).map((user, index) => (
                 <div
                   key={`${user.id}-${index}`}
                   className="group grid grid-cols-[auto_1fr_auto] items-center gap-6 p-4 border-b-[2px] border-black/10 hover:bg-neutral-100 transition-colors last:border-b-0"

@@ -3,9 +3,10 @@
 import { useState } from "react";
 import FeedToggle from "@/components/home/FeedToggle";
 import ReviewFeed from "@/components/home/ReviewFeed";
+import { User } from "@supabase/supabase-js";
 
 interface HomeFeedClientProps {
-    user: any;
+    user: User | null;
 }
 
 /**

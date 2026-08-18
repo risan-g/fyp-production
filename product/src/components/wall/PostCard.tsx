@@ -2,10 +2,30 @@ import DBControl from "./DBControl";
 import Link from "next/link";
 import FormattedText from "./FormattedText";
 
+export interface PostCardData {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  score?: number;
+  userVote?: 1 | -1 | 0;
+  replyCount?: number;
+  profiles: {
+    username: string;
+    avatar_url: string | null;
+  } | null;
+}
+
+interface PostCardProps {
+  post: PostCardData;
+  currentUserId?: string;
+  spotifyArtistId: string;
+}
+
 /**
  * preview of a submission.
  */
-export default function PostCard({ post, currentUserId, spotifyArtistId }: { post: any, currentUserId?: string, spotifyArtistId: string }) {
+export default function PostCard({ post, spotifyArtistId }: PostCardProps) {
   const score = post.score || 0;
   const userVote = post.userVote || 0;
 

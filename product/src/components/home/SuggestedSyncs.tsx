@@ -17,7 +17,7 @@ export default async function SuggestedSyncs({ userId }: { userId?: string }) {
     if (!userId) {
         return (
             <div className="border-[3px] border-black bg-white p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)] flex flex-col min-h-[250px]">
-                <h3 className="font-mono text-sm uppercase tracking-widest text-black/60 mb-4 pb-4 border-b-[3px] border-black">"SUGGESTED SYNCS"</h3>
+                <h3 className="font-mono text-sm uppercase tracking-widest text-black/60 mb-4 pb-4 border-b-[3px] border-black">&quot;SUGGESTED SYNCS&quot;</h3>
                 <div className="flex-1 flex flex-col items-center justify-center text-center gap-3 mt-4">
                     <p className="text-black/60 text-xs font-mono uppercase tracking-widest">Sign in to find users.</p>
                     <Link href="/sign-in" className="bg-black text-white px-6 py-2 text-xs font-bold uppercase tracking-[0.2em] font-mono hover:bg-accent-red transition-all border-2 border-transparent">
@@ -40,7 +40,7 @@ export default async function SuggestedSyncs({ userId }: { userId?: string }) {
     if (!myArtists || myArtists.length === 0) {
         return (
             <div className="border-[3px] border-black bg-white p-8 shadow-[8px_8px_0px_rgba(0,0,0,1)] flex flex-col min-h-[300px]">
-                <h3 className="font-mono text-sm uppercase tracking-widest text-black mb-6 pb-4 border-b-[3px] border-black font-bold">"SUGGESTED SYNCS"</h3>
+                <h3 className="font-mono text-sm uppercase tracking-widest text-black mb-6 pb-4 border-b-[3px] border-black font-bold">&quot;SUGGESTED SYNCS&quot;</h3>
                 <div className="flex-1 flex flex-col items-center justify-center text-center gap-6">
                     <p className="text-black font-black font-mono uppercase tracking-[0.1em] text-sm leading-relaxed max-w-[200px]">NO SUGGESTIONS YET. ADD ARTISTS TO YOUR ROTATION TO FIND YOUR TASTE MATCHES.</p>
                 </div>
@@ -60,7 +60,7 @@ export default async function SuggestedSyncs({ userId }: { userId?: string }) {
     if (!similarFollows || similarFollows.length === 0) {
         return (
             <div className="border-[3px] border-black bg-white p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)] flex flex-col min-h-[250px]">
-                <h3 className="font-mono text-sm uppercase tracking-widest text-black mb-4 pb-4 border-b-[3px] border-black font-bold">"SUGGESTED SYNCS"</h3>
+                <h3 className="font-mono text-sm uppercase tracking-widest text-black mb-4 pb-4 border-b-[3px] border-black font-bold">&quot;SUGGESTED SYNCS&quot;</h3>
                 <div className="flex-1 flex flex-col items-center justify-center text-center gap-3">
                     <p className="text-black/60 text-xs font-mono uppercase tracking-widest">[NO MATCHES]</p>
                 </div>
@@ -96,7 +96,7 @@ export default async function SuggestedSyncs({ userId }: { userId?: string }) {
     if (topMatches.length === 0) {
         return (
             <div className="border-[3px] border-black bg-white p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)] flex flex-col min-h-[250px]">
-                <h3 className="font-mono text-sm uppercase tracking-widest text-black mb-4 pb-4 border-b-[3px] border-black font-bold">"SUGGESTED SYNCS"</h3>
+                <h3 className="font-mono text-sm uppercase tracking-widest text-black mb-4 pb-4 border-b-[3px] border-black font-bold">&quot;SUGGESTED SYNCS&quot;</h3>
                 <div className="flex-1 flex flex-col items-center justify-center text-center gap-3">
                     <p className="text-black/60 text-xs font-mono uppercase tracking-widest">You are synced with everyone.</p>
                 </div>
@@ -138,7 +138,7 @@ export default async function SuggestedSyncs({ userId }: { userId?: string }) {
         <div className="border-[3px] border-black bg-white p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)] flex flex-col gap-4">
             <div className="flex items-center justify-between border-b-[3px] border-black pb-4">
                 <h3 className="font-mono text-sm uppercase tracking-widest text-black font-bold">
-                    "SUGGESTED SYNCS"
+                    &quot;SUGGESTED SYNCS&quot;
                 </h3>
             </div>
 

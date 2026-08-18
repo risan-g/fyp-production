@@ -1,12 +1,18 @@
 "use client";
-import PostCard from "./PostCard";
+import PostCard, { PostCardData } from "./PostCard";
 import CreatePostForm from "./CreatePostForm";
+
+interface WallFeedProps {
+  posts: PostCardData[];
+  currentUserId?: string;
+  spotifyArtistId: string;
+}
 
 /**
  * Renders the list of posts. 
  * Handles the state when an artist has no noise yet.
  */
-export default function WallFeed({ posts, currentUserId, spotifyArtistId }: { posts: any[], currentUserId?: string, spotifyArtistId: string }) {
+export default function WallFeed({ posts, currentUserId, spotifyArtistId }: WallFeedProps) {
   if (!posts || posts.length === 0) {
     return (
       <div className="flex flex-col items-center gap-8">

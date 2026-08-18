@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
@@ -17,7 +16,6 @@ export default function SignUpPage() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const supabase = createClient();
-  const router = useRouter();
 
   useEffect(() => {
     if (username.length < 3) {
@@ -61,8 +59,8 @@ export default function SignUpPage() {
       });
       if (error) throw error;
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An error occurred during registration.");
     } finally {
       setLoading(false);
     }

@@ -69,29 +69,55 @@ export async function GET(req: Request) {
       })(),
     ]);
 
+interface SpotifyImage {
+  url: string;
+}
+
+interface SpotifyArtistItem {
+  id: string;
+  name: string;
+  images?: SpotifyImage[];
+}
+
+interface SpotifyAlbumItem {
+  id: string;
+  name: string;
+  images?: SpotifyImage[];
+  artists?: { name: string }[];
+}
+
+interface ProfileSearchResult {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+}
+
     // Normalise users from Supabase
-    const users = (userResults.data || []).map((u: any) => ({
+    const userProfiles = (userResults.data || []) as ProfileSearchResult[];
+    const users = userProfiles.map((u) => ({
       id: u.username,
       name: u.username,
       image: u.avatar_url,
-      type: "user",
+      type: "user" as const,
     }));
 
     // Normalise artists from Spotify
-    const artists = (spotifyResults.artists?.items || []).map((a: any) => ({
+    const spotifyArtists = (spotifyResults.artists?.items || []) as SpotifyArtistItem[];
+    const artists = spotifyArtists.map((a) => ({
       id: a.id,
       name: a.name,
       image: a.images?.[0]?.url || null,
-      type: "artist",
+      type: "artist" as const,
     }));
 
     // Normalise albums from Spotify
-    const albums = (spotifyResults.albums?.items || []).map((a: any) => ({
+    const spotifyAlbums = (spotifyResults.albums?.items || []) as SpotifyAlbumItem[];
+    const albums = spotifyAlbums.map((a) => ({
       id: a.id,
       name: a.name,
       image: a.images?.[0]?.url || null,
-      subtitle: a.artists?.map((ar: any) => ar.name).join(", ") || "",
-      type: "album",
+      subtitle: a.artists?.map((ar) => ar.name).join(", ") || "",
+      type: "album" as const,
     }));
 
     return Response.json({ users, artists, albums });

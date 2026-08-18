@@ -8,6 +8,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { saveRating, removeRating } from "@/app/actions/reviews";
+import { User } from "@supabase/supabase-js";
 
 interface RatingProps {
   albumId: string;
@@ -55,43 +56,51 @@ export default function Rating({
   // Track if user physically touched slider
   const userHasInteracted = useRef(false);
 
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    loadUserRating();
-  }, [albumId]);
+    const loadUserRating = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        setUser(user);
 
-  const loadUserRating = async () => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
+        if (user) {
+          const { data: userReview } = await supabase
+            .from("reviews")
+            .select("rating")
+            .eq("user_id", user.id)
+            .eq("album_id", albumId)
+            .single();
 
-      if (user) {
-        const { data: userReview } = await supabase
-          .from("reviews")
-          .select("rating")
-          .eq("user_id", user.id)
-          .eq("album_id", albumId)
-          .single();
-
-        if (userReview && userReview.rating !== null) {
-          setRating(userReview.rating);
-          setOriginalRating(userReview.rating);
+          if (userReview && userReview.rating !== null) {
+            setRating(userReview.rating);
+            setOriginalRating(userReview.rating);
+          } else {
+            setRating(0);
+            setOriginalRating(null);
+          }
         } else {
+          setRating(0);
           setOriginalRating(null);
         }
+      } catch (err: unknown) {
+        if (typeof err === "object" && err !== null && "code" in err && err.code !== "PGRST116") {
+          console.error("Error loading rating:", err);
+        }
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      if (err.code !== "PGRST116") console.error("Error loading rating:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    userHasInteracted.current = false;
+    setError("");
+    loadUserRating();
+  }, [albumId, supabase]);
 
   /** 
    * Normalises the vertical offset to calculate a 0-100 integer.
@@ -103,7 +112,7 @@ export default function Rating({
     const trackRect = sliderWrapperRef.current.getBoundingClientRect();
 
     // Calculate distance from top of the track
-    let newTop = clientY - trackRect.top;
+    const newTop = clientY - trackRect.top;
 
     let percent = newTop / trackRect.height;
     percent = Math.max(0, Math.min(1, percent));
@@ -173,9 +182,9 @@ export default function Rating({
       userHasInteracted.current = false;
       window.dispatchEvent(new CustomEvent("review-updated"));
       router.refresh();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error removing rating:", err);
-      setError(err.message || "Failed to remove rating.");
+      setError(err instanceof Error ? err.message : "Failed to remove rating.");
     } finally {
       setSaving(false);
     }
@@ -206,9 +215,9 @@ export default function Rating({
       userHasInteracted.current = false;
       window.dispatchEvent(new CustomEvent("review-updated"));
       router.refresh();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error saving rating:", err);
-      setError(err.message || "Failed to save rating.");
+      setError(err instanceof Error ? err.message : "Failed to save rating.");
     } finally {
       setSaving(false);
     }
@@ -238,7 +247,7 @@ export default function Rating({
     <div className="border-[3px] border-black bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)] p-6 flex flex-col items-center">
       <div className="mb-10 h-32 flex flex-col justify-center items-center">
         <label className="block text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em] mb-4">
-          {user ? '"YOUR RATING"' : '""'}
+          {user ? '&quot;YOUR RATING&quot;' : '""'}
         </label>
         <div className="text-8xl font-black font-sans tracking-tighter text-black leading-none drop-shadow-md">
           {rating}
@@ -279,7 +288,7 @@ export default function Rating({
                   disabled={saving}
                   className="w-full py-4 bg-black text-white text-[10px] font-mono font-bold uppercase tracking-[0.2em] border-[3px] border-black shadow-[4px_4px_0px_rgba(255,0,0,1)] hover:bg-accent-red hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] disabled:opacity-50 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_rgba(255,0,0,1)] disabled:hover:bg-black transition-all cursor-pointer"
                 >
-                  {saving ? "SAVING..." : '"CONFIRM RATING"'}
+                  {saving ? "SAVING..." : '&quot;CONFIRM RATING&quot;'}
                 </button>
                 <button
                   onClick={handleCancel}

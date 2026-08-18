@@ -8,10 +8,16 @@ import {
 } from "@/app/actions/notifications";
 import { toggleFollow } from "@/app/actions/follow";
 
+interface SyncRequestUser {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+}
+
 export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState<"menu" | "requests">("menu");
-  const [requests, setRequests] = useState<any[]>([]);
+  const [requests, setRequests] = useState<SyncRequestUser[]>([]);
 
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -30,7 +36,7 @@ export default function NotificationBell() {
   useEffect(() => {
     const fetchReqs = async () => {
       const data = await getSyncRequests();
-      setRequests(data || []);
+      setRequests((data || []) as SyncRequestUser[]);
     };
 
     fetchReqs();
@@ -88,7 +94,7 @@ export default function NotificationBell() {
               </button>
             )}
             <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-black">
-              {view === "menu" ? '"NOTIFICATIONS"' : '"SYNC REQUESTS"'}
+              {view === "menu" ? '&quot;NOTIFICATIONS&quot;' : '&quot;SYNC REQUESTS&quot;'}
             </span>
           </div>
 

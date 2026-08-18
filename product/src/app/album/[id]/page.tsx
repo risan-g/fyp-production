@@ -24,9 +24,22 @@ export default async function AlbumPage({
     `https://api.spotify.com/v1/albums/${id}`,
   );
 
+interface SpotifyArtistRef {
+  id: string;
+  name: string;
+}
+
+interface SpotifyTrack {
+  id: string;
+  name: string;
+  duration_ms: number;
+  explicit?: boolean;
+  artists: SpotifyArtistRef[];
+}
+
   // Calculate the total length of the album.
   const totalDurationMs = album.tracks.items.reduce(
-    (acc: number, track: any) => acc + track.duration_ms,
+    (acc: number, track: SpotifyTrack) => acc + track.duration_ms,
     0,
   );
   const totalMinutes = Math.floor(totalDurationMs / 60000);
@@ -104,11 +117,11 @@ export default async function AlbumPage({
             <div className="flex items-center gap-4 mb-6">
               <h2 className="text-sm text-black font-mono font-bold uppercase tracking-[0.2em] flex items-center gap-2">
                 <span className="w-2 h-2 bg-accent-red flex-shrink-0"></span>
-                "TRACKLIST"
+                &quot;TRACKLIST&quot;
               </h2>
             </div>
             <ul className="flex flex-col">
-              {album.tracks.items.map((track: any, index: number) => (
+              {album.tracks.items.map((track: SpotifyTrack, index: number) => (
                 <li
                   key={track.id}
                   className="py-4 flex justify-between items-center group border-b-[2px] border-black/10 last:border-b-0 hover:bg-neutral-100 px-4 -mx-4 transition-colors duration-200 cursor-default"

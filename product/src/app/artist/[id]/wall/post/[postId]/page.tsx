@@ -8,6 +8,23 @@ import GlobalReplyForm from "@/components/wall/GlobalReplyForm";
 import DeletePostButton from "@/components/wall/DeletePostButton";
 import FormattedText from "@/components/wall/FormattedText";
 
+interface VoteRecord {
+  vote_type: number;
+  user_id: string;
+}
+
+interface CommentWithProfileAndVotes {
+  id: string;
+  post_id: string;
+  user_id: string;
+  parent_id: string | null;
+  content: string;
+  created_at: string;
+  is_voided?: boolean;
+  profiles: { username: string; avatar_url: string | null } | null;
+  votes: VoteRecord[];
+}
+
 async function fetchArtist(id: string) {
   return await fetchSpotifyData(`https://api.spotify.com/v1/artists/${id}`);
 }
@@ -51,17 +68,18 @@ export default async function PostPage({
   if (!post || !artist || artist.error) return notFound();
 
   // Process Post Score
-  const postScore = post.votes?.reduce((acc: number, v: any) => acc + v.vote_type, 0) || 0;
-  const postUserVote = post.votes?.find((v: any) => v.user_id === currentUser?.id)?.vote_type || 0;
+  const postVotes = (post.votes || []) as VoteRecord[];
+  const postScore = postVotes.reduce((acc: number, v: VoteRecord) => acc + v.vote_type, 0);
+  const postUserVote = (postVotes.find((v: VoteRecord) => v.user_id === currentUser?.id)?.vote_type || 0) as 1 | -1 | 0;
 
   // Process Comments Data for dB scores and user votes
-  const processedComments = commentsRes.data?.map((comment: any) => {
-    const score = comment.votes?.reduce((acc: number, v: any) => acc + v.vote_type, 0) || 0;
-    const userVote = comment.votes?.find((v: any) => v.user_id === currentUser?.id)?.vote_type || 0;
+  const commentsList = (commentsRes.data || []) as unknown as CommentWithProfileAndVotes[];
+  const processedComments = commentsList.map((comment) => {
+    const commentVotes = comment.votes || [];
+    const score = commentVotes.reduce((acc: number, v: VoteRecord) => acc + v.vote_type, 0);
+    const userVote = (commentVotes.find((v: VoteRecord) => v.user_id === currentUser?.id)?.vote_type || 0) as 1 | -1 | 0;
     return { ...comment, score, userVote };
-  }) || [];
-
-  const artistImage = artist.images?.[0]?.url;
+  });
 
   return (
     <div className="bg-white min-h-screen pb-24">

@@ -1,10 +1,15 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
 import NotificationBell from "@/components/NotificationBell";
-import { X, Loader2, Search } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
+
+type SearchItem =
+  | { id: string; name: string; image: string | null; type: "user" }
+  | { id: string; name: string; image: string | null; type: "artist" }
+  | { id: string; name: string; image: string | null; subtitle: string; type: "album" };
 
 interface SearchResults {
   users: { id: string; name: string; image: string | null; type: "user" }[];
@@ -31,6 +36,23 @@ export default function NavBar() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const supabase = createClient();
 
+  const fetchProfile = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("username, avatar_url")
+      .eq("id", userId)
+      .single();
+
+    if (data) {
+      setUsername(data.username);
+      setAvatarUrl(data.avatar_url);
+    } else {
+      setUsername(null);
+      setAvatarUrl(null);
+      setUser(null);
+    }
+  }, [supabase]);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -49,7 +71,7 @@ export default function NavBar() {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [supabase, fetchProfile]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -62,24 +84,7 @@ export default function NavBar() {
     return () => {
       window.removeEventListener("profileUpdated", handleProfileUpdate);
     };
-  }, [user?.id]);
-
-  const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("username, avatar_url")
-      .eq("id", userId)
-      .single();
-
-    if (data) {
-      setUsername(data.username);
-      setAvatarUrl(data.avatar_url);
-    } else {
-      setUsername(null);
-      setAvatarUrl(null);
-      setUser(null);
-    }
-  };
+  }, [user?.id, fetchProfile]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -133,7 +138,7 @@ export default function NavBar() {
     }
   }, [selectedIndex]);
 
-  const handleSelect = (item: any) => {
+  const handleSelect = (item: SearchItem) => {
     setShowDropdown(false);
     setQuery("");
     setSelectedIndex(-1);
@@ -162,7 +167,7 @@ export default function NavBar() {
 
   const hasResults = results.users.length > 0 || results.artists.length > 0 || results.albums.length > 0;
 
-  const renderItem = (item: any, globalIndex: number, subtitle?: string) => {
+  const renderItem = (item: SearchItem, globalIndex: number, subtitle?: string) => {
     const isActive = selectedIndex === globalIndex;
     return (
       <li
@@ -200,7 +205,7 @@ export default function NavBar() {
 
   const renderSectionHeader = (label: string) => (
     <div className="px-4 py-2 bg-neutral-100 border-b-[3px] border-black">
-      <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-black/60">"{label}"</span>
+      <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-black/60">&quot;{label}&quot;</span>
     </div>
   );
 
@@ -273,7 +278,7 @@ export default function NavBar() {
 
           {showDropdown && query && !hasResults && !isSearching && (
             <div className="absolute top-full mt-2 left-0 w-full bg-white border-[3px] border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] z-50 p-6 text-center">
-              <p className="text-black font-mono font-bold uppercase tracking-widest text-sm">"NO MATCHES"</p>
+              <p className="text-black font-mono font-bold uppercase tracking-widest text-sm">&quot;NO MATCHES&quot;</p>
             </div>
           )}
         </div>

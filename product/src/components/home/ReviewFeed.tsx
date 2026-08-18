@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { Star } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /**
@@ -23,15 +22,32 @@ const timeAgo = (date: string) => {
     return `${days}d ago`;
 };
 
+interface FeedReviewItem {
+    id: string;
+    content: string | null;
+    rating: number | null;
+    created_at: string;
+    user_id: string;
+    album_id: string;
+    album_name: string;
+    artist_name: string;
+    album_image_url: string | null;
+    profiles: {
+        username: string;
+        avatar_url: string | null;
+        is_private?: boolean;
+    } | null;
+}
+
 interface ReviewFeedProps {
     feedType: "global" | "synced";
-    optimisticReview: any | null; // For optimistic UI updates
-    user: any;
+    optimisticReview: FeedReviewItem | null; // For optimistic UI updates
+    user: { id: string } | null;
 }
 
 export default function ReviewFeed({ feedType, optimisticReview, user }: ReviewFeedProps) {
     const supabase = createClient();
-    const [reviews, setReviews] = useState<any[]>([]);
+    const [reviews, setReviews] = useState<FeedReviewItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -61,7 +77,7 @@ export default function ReviewFeed({ feedType, optimisticReview, user }: ReviewF
                         .eq("status", "accepted");
 
                     if (follows && follows.length > 0) {
-                        const followingIds = follows.map((f: any) => f.following_id);
+                        const followingIds = follows.map((f: { following_id: string }) => f.following_id);
                         query = query.in("user_id", followingIds);
                     } else {
                         // If they don't follow anyone, fetch nothing for synced feed
@@ -86,11 +102,11 @@ export default function ReviewFeed({ feedType, optimisticReview, user }: ReviewF
 
                 if (isMounted && data) {
                     // Filter out rows that have no text and no rating (just in case they exist)
-                    const validReviews = data.filter((r) => r.content || r.rating !== null);
+                    const validReviews = (data as unknown as FeedReviewItem[]).filter((r) => r.content || r.rating !== null);
                     setReviews(validReviews);
                 }
-            } catch (err: any) {
-                console.error("Failed to fetch feed:", err.message || err, Object.getOwnPropertyNames(err).reduce((a, b) => { (a as any)[b] = err[b]; return a; }, {}));
+            } catch (err: unknown) {
+                console.error("Failed to fetch feed:", err instanceof Error ? err.message : err);
             } finally {
                 if (isMounted) setIsLoading(false);
             }
@@ -134,9 +150,9 @@ export default function ReviewFeed({ feedType, optimisticReview, user }: ReviewF
                             .single();
 
                         const newReviewWithProfile = {
-                            ...payload.new,
+                            ...(payload.new as Record<string, unknown>),
                             profiles: profile
-                        };
+                        } as unknown as FeedReviewItem;
 
                         setReviews((current) => {
                             // Prevent duplicates (e.g. if optimistic UI already added it, or we see it twice)
@@ -174,7 +190,7 @@ export default function ReviewFeed({ feedType, optimisticReview, user }: ReviewF
     if (feedType === "synced" && !user) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-center border-[3px] border-black bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)]">
-                <p className="text-black font-bold mb-6 font-mono uppercase tracking-[0.2em] text-sm">"SIGN IN FOR SYNCED FEED"</p>
+                <p className="text-black font-bold mb-6 font-mono uppercase tracking-[0.2em] text-sm">&quot;SIGN IN FOR SYNCED FEED&quot;</p>
                 <Link href="/sign-in" className="bg-black text-white font-bold px-10 py-3 text-xs uppercase tracking-[0.2em] font-mono hover:bg-accent-red transition-colors border-2 border-transparent">
                     SIGN IN
                 </Link>
@@ -195,7 +211,7 @@ export default function ReviewFeed({ feedType, optimisticReview, user }: ReviewF
     if (reviews.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-40 text-center border-[3px] border-black bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)] px-8">
-                <p className="text-black font-black font-mono uppercase tracking-[0.2em] mb-4">"NO ACTIVITY YET"</p>
+                <p className="text-black font-black font-mono uppercase tracking-[0.2em] mb-4">&quot;NO ACTIVITY YET&quot;</p>
                 <p className="text-black/50 font-mono text-xs uppercase tracking-widest max-w-[300px]">
                     {feedType === "synced" 
                         ? "SYNC WITH OTHER USERS TO SEE THEIR REVIEWS AND RATINGS POPULATE YOUR FEED." 
@@ -276,7 +292,7 @@ export default function ReviewFeed({ feedType, optimisticReview, user }: ReviewF
                                     {/* Review text */}
                                     {review.content && (
                                         <div className="relative">
-                                            <span className="absolute -left-3 -top-2 text-2xl font-serif text-accent-red font-black leading-none">"</span>
+                                            <span className="absolute -left-3 -top-2 text-2xl font-serif text-accent-red font-black leading-none">&ldquo;</span>
                                             <p className="text-black text-lg leading-relaxed whitespace-pre-wrap break-words font-serif indent-2">
                                                 {review.content}
                                             </p>
