@@ -7,10 +7,21 @@ import { cookies } from "next/headers";
  */
 export async function createClient() {
   const cookieStore = await cookies();
+  const supabaseUrl = process.env.DOTWV_SERVER_SUPABASE_URL || process.env.DOTWV_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.DOTWV_PUBLIC_SUPABASE_ANON_KEY;
+
+  let finalUrl = supabaseUrl;
+  let finalAnonKey = supabaseAnonKey;
+
+  if (!finalUrl || !finalAnonKey) {
+    console.error("Missing required Supabase runtime configuration (DOTWV_SERVER_SUPABASE_URL/DOTWV_PUBLIC_SUPABASE_URL or DOTWV_PUBLIC_SUPABASE_ANON_KEY)");
+    finalUrl = finalUrl || "http://localhost";
+    finalAnonKey = finalAnonKey || "dummy";
+  }
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    finalUrl,
+    finalAnonKey,
     {
       cookies: {
         // Reads cookies to check if a user is logged in on the server

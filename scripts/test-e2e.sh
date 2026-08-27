@@ -10,8 +10,9 @@ echo "=== Ensuring Next.js is built ==="
 
 echo "=== Obtaining Local Supabase Configuration ==="
 # No eval, parse safely
-export NEXT_PUBLIC_SUPABASE_URL=$(npx supabase status -o env | grep API_URL | cut -d '=' -f 2 | tr -d '"' | tr -d '\r')
-export NEXT_PUBLIC_SUPABASE_ANON_KEY=$(npx supabase status -o env | grep ANON_KEY | cut -d '=' -f 2 | tr -d '"' | tr -d '\r')
+export DOTWV_PUBLIC_SUPABASE_URL=$(npx supabase status -o env | grep API_URL | cut -d '=' -f 2 | tr -d '"' | tr -d '\r')
+export DOTWV_PUBLIC_SUPABASE_ANON_KEY=$(npx supabase status -o env | grep ANON_KEY | cut -d '=' -f 2 | tr -d '"' | tr -d '\r')
+export DOTWV_SERVER_SUPABASE_URL=$DOTWV_PUBLIC_SUPABASE_URL
 export SUPABASE_SERVICE_ROLE_KEY=$(npx supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2 | tr -d '"' | tr -d '\r')
 
 # Dummy Spotify isolation
@@ -20,7 +21,7 @@ export SPOTIFY_CLIENT_SECRET="dummy-spotify-secret"
 export SPOTIFY_API_BASE_URL="http://127.0.0.1:3001"
 export SPOTIFY_ACCOUNTS_BASE_URL="http://127.0.0.1:3001"
 
-if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+if [ -z "$DOTWV_PUBLIC_SUPABASE_URL" ] || [ -z "$DOTWV_PUBLIC_SUPABASE_ANON_KEY" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
   echo "ERROR: Could not obtain Supabase configuration. Is the local stack running?"
   exit 1
 fi

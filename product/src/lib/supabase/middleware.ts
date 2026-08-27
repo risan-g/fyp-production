@@ -10,9 +10,16 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
+  const supabaseUrl = process.env.DOTWV_SERVER_SUPABASE_URL || process.env.DOTWV_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.DOTWV_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("Missing required Supabase runtime configuration in middleware");
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl || "http://localhost",
+    supabaseAnonKey || "dummy",
     {
       cookies: {
         // Retrieves existing session cookies from the browser request
