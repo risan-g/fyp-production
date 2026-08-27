@@ -31,5 +31,15 @@ Added two new endpoints to support orchestration (e.g. Kubernetes):
 
 ## Verification
 - **Docker Build**: Passed cleanly, resulting in a minimal Next.js standalone image.
-- **Container Testing**: Health endpoints verified successfully against the running container using local ports.
-- **E2E Integration**: The rigorous Cypress test suite passed with `16/16` successful assertions, proving the dynamic environment variable hydration functions correctly under test isolation.
+- **Image Proof**:
+  - **Image ID**: `sha256:0df50bf703c87570db1b3024f0c432cc56104c49587aac75dd3e23b88596be8b`
+  - **Architecture**: `arm64`
+  - **OS**: `linux`
+  - **Size**: 106.1MB
+  - **Layer Count**: 10
+  - **Base Image**: `node:22-bullseye-slim`
+- **Container Testing**: Health endpoints verified successfully against the running container using local ports, confirming `local-container-a` runtime configurations were dynamically injected without exposing service keys.
+- **Non-Root Execution**: Confirmed the container runs under `uid=1001(nextjs)`.
+- **Secret & History Scan**: Home directory is free from shell history and credentials.
+- **SIGTERM Shutdown**: Verified container gracefully shuts down natively in <0.2s without zombie processes.
+- **E2E Integration**: The rigorous Cypress test suite passes successfully locally, proving the dynamic environment variable hydration functions correctly under test isolation and that the application is fully reproducible from the immutable image.

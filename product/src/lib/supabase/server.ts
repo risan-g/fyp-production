@@ -10,13 +10,11 @@ export async function createClient() {
   const supabaseUrl = process.env.DOTWV_SERVER_SUPABASE_URL || process.env.DOTWV_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.DOTWV_PUBLIC_SUPABASE_ANON_KEY;
 
-  let finalUrl = supabaseUrl;
-  let finalAnonKey = supabaseAnonKey;
+  const finalUrl = supabaseUrl;
+  const finalAnonKey = supabaseAnonKey;
 
   if (!finalUrl || !finalAnonKey) {
-    console.error("Missing required Supabase runtime configuration (DOTWV_SERVER_SUPABASE_URL/DOTWV_PUBLIC_SUPABASE_URL or DOTWV_PUBLIC_SUPABASE_ANON_KEY)");
-    finalUrl = finalUrl || "http://localhost";
-    finalAnonKey = finalAnonKey || "dummy";
+    throw new Error("Missing required Supabase runtime configuration: DOTWV_SERVER_SUPABASE_URL (or DOTWV_PUBLIC_SUPABASE_URL) and DOTWV_PUBLIC_SUPABASE_ANON_KEY are required.");
   }
 
   return createServerClient(

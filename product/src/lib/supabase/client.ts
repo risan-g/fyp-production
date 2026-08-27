@@ -19,10 +19,7 @@ export function createClient() {
   }
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("Missing required Supabase browser configuration");
-    // Provide safe dummy values to prevent build crashes during prerendering
-    supabaseUrl = supabaseUrl || "http://localhost";
-    supabaseAnonKey = supabaseAnonKey || "dummy";
+    throw new Error("Missing required Supabase browser configuration: DOTWV_PUBLIC_SUPABASE_URL and DOTWV_PUBLIC_SUPABASE_ANON_KEY are required.");
   }
 
   return createBrowserClient(supabaseUrl, supabaseAnonKey);

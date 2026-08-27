@@ -14,12 +14,12 @@ export async function updateSession(request: NextRequest) {
   const supabaseAnonKey = process.env.DOTWV_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("Missing required Supabase runtime configuration in middleware");
+    throw new Error("Missing required Supabase runtime configuration: DOTWV_SERVER_SUPABASE_URL (or DOTWV_PUBLIC_SUPABASE_URL) and DOTWV_PUBLIC_SUPABASE_ANON_KEY are required.");
   }
 
   const supabase = createServerClient(
-    supabaseUrl || "http://localhost",
-    supabaseAnonKey || "dummy",
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         // Retrieves existing session cookies from the browser request
