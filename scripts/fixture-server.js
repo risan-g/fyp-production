@@ -99,6 +99,6 @@ const server = http.createServer((req, res) => {
 });
 
 const PORT = 3001;
-server.listen(PORT, () => {
-  console.log(`Fixture server listening on port ${PORT}`);
+server.listen(PORT, '127.0.0.1', () => {
+  console.log(`Fixture server listening on 127.0.0.1:${PORT}`);
 });
