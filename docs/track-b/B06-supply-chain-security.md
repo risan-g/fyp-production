@@ -16,10 +16,15 @@ To safely resolve these without initiating an unplanned major upgrade to Next.js
 **Deadline**: Review no later than 30 days (or when Next.js backports the patches to v15). These are strict remediations, not vulnerability ignores.
 
 ## Action Pinning Policy
-All GitHub Actions in this project are strictly pinned to verified 40-character commit SHAs (e.g. `actions/checkout@11d5960... # v4`). This prevents supply-chain attacks stemming from compromised third-party tags mutating upstream. 
+All GitHub Actions in this project are strictly pinned to verified 40-character commit SHAs with exact release comments:
+- `actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0`
+- `actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0`
+- `actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2`
+
+This prevents supply-chain attacks stemming from compromised third-party tags mutating upstream.
 
 ## Docker Base Image Pinning
-The application image is pinned to the exact multi-platform manifest digest of `node:22-bullseye-slim` (e.g., `@sha256:5736e7ef...`). This ensures immutability across builds while preserving cross-architecture compatibility (ARM64 and AMD64).
+The application image is pinned to the exact patch-specific multi-platform manifest digest of `node:22.23.2-bullseye-slim` (`node:22.23.2-bullseye-slim@sha256:5736e7ef1f3f2109be7ef8aea0cbdf931804aee9a18c6760507b8ded078b25a9`). This ensures immutability across builds while preserving cross-architecture compatibility (ARM64 and AMD64).
 
 ## Automated Dependency Updates (Dependabot)
 Dependabot is configured on a weekly schedule across the following ecosystems:
