@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "compose:local:up": "./scripts/compose-local.sh up",
+    "compose:local:down": "./scripts/compose-local.sh down",
+    "compose:local:test": "./scripts/compose-local.sh test"
+  },
   "devDependencies": {
     "supabase": "^2.111.0"
   }
