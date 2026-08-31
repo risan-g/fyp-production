@@ -10,11 +10,11 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  const supabaseUrl = process.env.DOTWV_SERVER_SUPABASE_URL || process.env.DOTWV_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.DOTWV_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.DOTWV_SERVER_SUPABASE_URL || process.env.DOTWV_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.DOTWV_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Missing required Supabase runtime configuration: DOTWV_SERVER_SUPABASE_URL (or DOTWV_PUBLIC_SUPABASE_URL) and DOTWV_PUBLIC_SUPABASE_ANON_KEY are required.");
+    throw new Error("Missing required Supabase runtime configuration: DOTWV_SERVER_SUPABASE_URL, DOTWV_PUBLIC_SUPABASE_URL, or NEXT_PUBLIC_SUPABASE_URL and Anon Key are required.");
   }
 
   const supabase = createServerClient(

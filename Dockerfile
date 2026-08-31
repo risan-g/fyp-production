@@ -24,6 +24,8 @@ ENV DOTWV_PUBLIC_SUPABASE_URL="http://localhost:8000"
 ENV DOTWV_PUBLIC_SUPABASE_ANON_KEY="dummy-anon-key"
 ENV DOTWV_SERVER_SUPABASE_URL="http://localhost:8000"
 ENV SUPABASE_SERVICE_ROLE_KEY="dummy-service-key"
+ENV NEXT_PUBLIC_SUPABASE_URL="http://localhost:8000"
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY="dummy-anon-key"
 RUN npm run build
 
 # 3. Runner stage

@@ -18,7 +18,7 @@ Implement a safe, deterministic Docker Compose workflow for local development an
 - Local keys are dynamically extracted from `npx supabase status -o env`.
 - Secrets are NEVER printed to stdout or committed to Git.
 - Configuration is written to a temporary `.env` file (`/tmp/.dotwv.compose.env`), which is mounted by Compose. The orchestration script securely deletes this file upon exit (trap INT TERM EXIT).
-- Core Environment Variable Names configured: `DOTWV_PUBLIC_SUPABASE_URL`, `DOTWV_SERVER_SUPABASE_URL`, `DOTWV_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_API_BASE_URL`, `SPOTIFY_ACCOUNTS_BASE_URL`, `DOTWV_ENVIRONMENT`, `DOTWV_RELEASE_SHA`.
+- Core Environment Variable Names configured: `DOTWV_PUBLIC_SUPABASE_URL`, `DOTWV_SERVER_SUPABASE_URL`, `DOTWV_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_API_BASE_URL`, `SPOTIFY_ACCOUNTS_BASE_URL`, `DOTWV_ENVIRONMENT`, `DOTWV_RELEASE_SHA`.
 
 ## Exact Commands
 

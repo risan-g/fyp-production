@@ -57,8 +57,9 @@ describe("/api/config", () => {
 
   it("throws an error specifying variable names when configuration is missing", async () => {
     delete process.env.DOTWV_PUBLIC_SUPABASE_URL;
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     process.env.DOTWV_PUBLIC_SUPABASE_ANON_KEY = "public-anon-key";
 
-    await expect(GET()).rejects.toThrow("Missing required Supabase browser configuration: DOTWV_PUBLIC_SUPABASE_URL and DOTWV_PUBLIC_SUPABASE_ANON_KEY are required.");
+    await expect(GET()).rejects.toThrow("Missing required Supabase browser configuration: DOTWV_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL and Anon Key are required.");
   });
 });

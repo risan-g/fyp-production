@@ -51,8 +51,10 @@ describe("Readiness Endpoint", () => {
 
   it("should return not_ready when required configuration is missing", async () => {
     delete process.env.DOTWV_PUBLIC_SUPABASE_URL;
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     delete process.env.DOTWV_SERVER_SUPABASE_URL;
     delete process.env.DOTWV_PUBLIC_SUPABASE_ANON_KEY;
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     const res = (await GET()) as unknown as Response;
@@ -60,8 +62,8 @@ describe("Readiness Endpoint", () => {
     
     expect(res.status).toBe(503);
     expect(json.status).toBe("not_ready");
-    expect(json.missing_configuration).toContain("DOTWV_SERVER_SUPABASE_URL / DOTWV_PUBLIC_SUPABASE_URL");
-    expect(json.missing_configuration).toContain("DOTWV_PUBLIC_SUPABASE_ANON_KEY");
+    expect(json.missing_configuration).toContain("DOTWV_SERVER_SUPABASE_URL / DOTWV_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL");
+    expect(json.missing_configuration).toContain("DOTWV_PUBLIC_SUPABASE_ANON_KEY / NEXT_PUBLIC_SUPABASE_ANON_KEY");
     expect(json.missing_configuration).toContain("SUPABASE_SERVICE_ROLE_KEY");
   });
 });
