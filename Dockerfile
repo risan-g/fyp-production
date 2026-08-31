@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Base image for Node 22 (Debian-based)
-FROM node:22.23.2-bullseye-slim@sha256:5736e7ef1f3f2109be7ef8aea0cbdf931804aee9a18c6760507b8ded078b25a9 AS base
+FROM node:22.23.2-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS base
 
 # 1. Dependencies stage
 FROM base AS deps
@@ -28,6 +28,7 @@ RUN npm run build
 
 # 3. Runner stage
 FROM base AS runner
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

@@ -48,19 +48,32 @@ jobs:
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v ${{ github.workspace }}:/workspace \
-            anchore/syft \
+            anchore/syft:v1.11.0@sha256:726ee9bb981507deb8cce9d57e7c8a80994ae0a59ffa95dc433aa325e0235c8a \
             dotwv:b06-scan \
             -o spdx-json=/workspace/sbom.spdx.json
 
-      - name: Scan Image Vulnerabilities (Trivy)
+      - name: Image Visibility Scan (Trivy)
         run: |
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v ${{ github.workspace }}:/workspace \
-            aquasec/trivy image \
+            aquasec/trivy:0.55.0@sha256:35e972d4c97895711cb2de6594cc1774b61e6b9dc7661ef73a76dd649f006c8d \
+            image \
             --severity HIGH,CRITICAL \
+            --format json \
+            --output /workspace/trivy-visibility-report.json \
+            dotwv:b06-scan
+
+      - name: Image Blocking Scan (Trivy)
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v ${{ github.workspace }}:/workspace \
+            aquasec/trivy:0.55.0@sha256:35e972d4c97895711cb2de6594cc1774b61e6b9dc7661ef73a76dd649f006c8d \
+            image \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
             --exit-code 1 \
-            --output /workspace/trivy-report.txt \
             dotwv:b06-scan
 
       - name: Upload SBOM
@@ -70,9 +83,9 @@ jobs:
           name: sbom
           path: sbom.spdx.json
 
-      - name: Upload Trivy Report
+      - name: Upload Trivy Visibility Report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: trivy-report
-          path: trivy-report.txt
+          name: trivy-visibility-report
+          path: trivy-visibility-report.json
