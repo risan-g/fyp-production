@@ -29,17 +29,22 @@ Added two new endpoints to support orchestration (e.g. Kubernetes):
 - `/api/health/live`: Returns `{"status":"alive"}` immediately to indicate the Node process is running.
 - `/api/health/ready`: Returns `{"status":"ready", "service":"dotwv", "environment": process.env.DOTWV_ENVIRONMENT, "release": process.env.DOTWV_RELEASE_SHA}` to confirm the service is configured and ready for traffic. Added Jest tests for verification.
 
+### Supabase Auth Cookie Unification
+- To support split-network architectures where the server connects via internal Docker DNS (`http://kong:8000`) and the browser connects via public/host gateway (`http://127.0.0.1:54321` or public domain), Supabase auth cookie names are explicitly set across browser client, server client, and middleware to `sb-dotwv-auth-token`.
+- **Deployment Warning**: Changing from the default project-derived Supabase cookie name (`sb-<project-ref>-auth-token`) to `sb-dotwv-auth-token` will likely invalidate existing active browser sessions and require users to sign in again after deployment.
+
 ## Verification
 - **Docker Build**: Passed cleanly, resulting in a minimal Next.js standalone image.
 - **Image Proof**:
-  - **Image ID**: `sha256:0df50bf703c87570db1b3024f0c432cc56104c49587aac75dd3e23b88596be8b`
+  - **Image ID**: `sha256:f0097cef21b77c643579f158879619b44f3575d4a8516da554b7b6bc5cd85b21`
   - **Architecture**: `arm64`
   - **OS**: `linux`
-  - **Size**: 106.1MB
-  - **Layer Count**: 10
-  - **Base Image**: `node:22-bullseye-slim`
-- **Container Testing**: Health endpoints verified successfully against the running container using local ports, confirming `local-container-a` runtime configurations were dynamically injected without exposing service keys.
-- **Non-Root Execution**: Confirmed the container runs under `uid=1001(nextjs)`.
-- **Secret & History Scan**: Home directory is free from shell history and credentials.
-- **SIGTERM Shutdown**: Verified container gracefully shuts down natively in <0.2s without zombie processes.
-- **E2E Integration**: The rigorous Cypress test suite passes successfully locally, proving the dynamic environment variable hydration functions correctly under test isolation and that the application is fully reproducible from the immutable image.
+  - **Size**: 106.1MB (unpacked layers: 10)
+  - **Base Image**: `node:22-bullseye-slim` (Node `v22.23.2`)
+- **Container Runtime & Security**:
+  - Confirmed non-root execution (`uid=1001(nextjs) gid=65534(nogroup)`).
+  - Clean filesystem: no `.env` files, `.git`, test fixtures, logs, or Cypress artifacts copied to production container.
+  - Secret scan: no sensitive credentials baked into image layers or metadata.
+- **Immutable Promotion**: Verified identical image ID across `local-container-a` and `local-container-b` environments without rebuilding. Runtime environment variables correctly injected and served by `/api/health/live`, `/api/health/ready`, and `/api/config`.
+- **SIGTERM Shutdown**: Container terminates cleanly in <200ms with exit code 0 upon receiving SIGTERM.
+- **E2E Integration**: Full Cypress E2E test suite (16/16 tests across 7 specs) passes completely against the containerized application.
