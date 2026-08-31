@@ -5,6 +5,6 @@
     "compose:local:test": "./scripts/compose-local.sh test"
   },
   "devDependencies": {
-    "supabase": "^2.111.0"
+    "supabase": "^2.116.0"
   }
 }
