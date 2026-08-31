@@ -1,0 +1,64 @@
+name: Supply Chain Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 4 * * 0' # Weekly scan
+
+jobs:
+  supply-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Root Dependencies
+        run: npm ci
+
+      - name: Root Audit
+        run: npm audit --audit-level=high
+
+      - name: Install Product Dependencies
+        working-directory: ./product
+        run: npm ci
+
+      - name: Product Audit
+        working-directory: ./product
+        run: npm audit --audit-level=high
+
+      - name: Install Syft & Trivy
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Build Docker Image
+        run: docker build -t dotwv:b06-scan .
+
+      - name: Generate SBOM (Syft)
+        run: syft dotwv:b06-scan -o spdx-json=sbom.spdx.json
+
+      - name: Scan Image Vulnerabilities (Trivy)
+        run: trivy image --exit-code 1 --severity HIGH,CRITICAL dotwv:b06-scan > trivy-report.txt
+
+      - name: Upload SBOM
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sbom
+          path: sbom.spdx.json
+
+      - name: Upload Trivy Report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: trivy-report
+          path: trivy-report.txt

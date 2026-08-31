@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Base image for Node 22 (Debian-based)
-FROM node:22-bullseye-slim AS base
+FROM node:22-bullseye-slim@sha256:5736e7ef1f3f2109be7ef8aea0cbdf931804aee9a18c6760507b8ded078b25a9 AS base
 
 # 1. Dependencies stage
 FROM base AS deps
