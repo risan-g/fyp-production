@@ -39,9 +39,9 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Set correct ownership and copy output
-COPY --from=builder /app/product/public ./product/public
+COPY --from=builder /app/product/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/product/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/product/.next/static ./product/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/product/.next/static ./.next/static
 
 # Switch to the non-root user
 USER nextjs

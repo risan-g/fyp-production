@@ -21,6 +21,9 @@ export async function createClient() {
     finalUrl,
     finalAnonKey,
     {
+      cookieOptions: {
+        name: 'sb-dotwv-auth-token',
+      },
       cookies: {
         // Reads cookies to check if a user is logged in on the server
         getAll() {

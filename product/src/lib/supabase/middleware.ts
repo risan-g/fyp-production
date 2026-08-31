@@ -21,6 +21,9 @@ export async function updateSession(request: NextRequest) {
     supabaseUrl,
     supabaseAnonKey,
     {
+      cookieOptions: {
+        name: 'sb-dotwv-auth-token',
+      },
       cookies: {
         // Retrieves existing session cookies from the browser request
         getAll() {

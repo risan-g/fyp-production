@@ -22,5 +22,9 @@ export function createClient() {
     throw new Error("Missing required Supabase browser configuration: DOTWV_PUBLIC_SUPABASE_URL and DOTWV_PUBLIC_SUPABASE_ANON_KEY are required.");
   }
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: {
+      name: 'sb-dotwv-auth-token',
+    },
+  });
 }
