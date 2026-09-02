@@ -61,7 +61,7 @@ export async function GET(req: Request) {
       (async () => {
         const token = await getSpotifyToken();
         const res = await fetch(
-          `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist,album&limit=3`,
+          `${process.env.SPOTIFY_API_BASE_URL || 'https://api.spotify.com'}/v1/search?q=${encodeURIComponent(query)}&type=artist,album&limit=3`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!res.ok) return { artists: [], albums: [] };
