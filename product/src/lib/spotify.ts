@@ -10,7 +10,7 @@ const clientSecret = process.env.SPOTIFY_CLIENT_SECRET!;
  * Retrieves a temporary Access Token using the Client Credentials flow.
  */
 export async function getSpotifyToken() {
-  const response = await fetch("https://accounts.spotify.com/api/token", {
+  const response = await fetch(`${process.env.SPOTIFY_ACCOUNTS_BASE_URL || 'https://accounts.spotify.com'}/api/token`, {
     method: "POST",
     headers: {
       Authorization:
