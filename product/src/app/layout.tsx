@@ -5,7 +5,6 @@
  * global styles, and persistent components like the NavBar.
  */
 
-"use client";
 import { ReactNode } from "react";
 import NavBar from "@/components/NavBar";
 import "./globals.css";
@@ -14,10 +13,13 @@ interface RootLayoutProps {
   children: ReactNode;
 }
 
+import Script from "next/script";
+
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en">
-      <body className="min-h-screen">
+    <html lang="en" suppressHydrationWarning>
+      <body className="min-h-screen" suppressHydrationWarning>
+        <Script src="/api/config" strategy="beforeInteractive" />
         {/* Persistent Navigation Bar across all application routes */}
         <NavBar />
 

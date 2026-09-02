@@ -14,10 +14,10 @@ describe("Search & Discovery Mechanics", () => {
     cy.wait(1500); 
 
     // Checking the dropdown for the specific artist result
-    cy.contains("Travis Scott", { timeout: 8000 }).should("be.visible");
+    cy.get('header div.absolute').contains("Travis Scott", { timeout: 8000 }).should("be.visible");
 
     // Click the result to test the dynamic routing
-    cy.contains("Travis Scott").click();
+    cy.get('header div.absolute').contains("Travis Scott").click();
 
     // Verify the URL structure for artist pages
     cy.url({ timeout: 10000 }).should("include", "/artist/");

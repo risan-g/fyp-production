@@ -1,0 +1,27 @@
+# Rebuild the local database state and temp directories
+supabase/.temp/
+supabase/.branches/
+.env*
+*.env
+.DS_Store
+.vscode/
+.idea/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+coverage/
+.next/
+out/
+build/
+node_modules/
+product/node_modules/
+product/.next/
+product/cypress/downloads/
+product/cypress/screenshots/
+product/cypress/videos/
+cypress/
+docs/
+README.md

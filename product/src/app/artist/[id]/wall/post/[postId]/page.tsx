@@ -26,7 +26,7 @@ interface CommentWithProfileAndVotes {
 }
 
 async function fetchArtist(id: string) {
-  return await fetchSpotifyData(`https://api.spotify.com/v1/artists/${id}`);
+  return await fetchSpotifyData(`${process.env.SPOTIFY_API_BASE_URL || 'https://api.spotify.com'}/v1/artists/${id}`);
 }
 
 /**
