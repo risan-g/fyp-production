@@ -1,0 +1,91 @@
+name: Supply Chain Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 4 * * 0' # Weekly scan
+
+permissions:
+  contents: read
+
+jobs:
+  supply-chain:
+    name: Supply Chain & Image Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Root Dependencies
+        run: npm ci
+
+      - name: Root Audit
+        run: npm audit --audit-level=high
+
+      - name: Install Product Dependencies
+        working-directory: ./product
+        run: npm ci
+
+      - name: Product Audit
+        working-directory: ./product
+        run: npm audit --audit-level=high
+
+      - name: Build Docker Image
+        run: docker build -t dotwv:b06-scan .
+
+      - name: Generate SBOM (Syft)
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v ${{ github.workspace }}:/workspace \
+            anchore/syft:v1.11.0@sha256:726ee9bb981507deb8cce9d57e7c8a80994ae0a59ffa95dc433aa325e0235c8a \
+            dotwv:b06-scan \
+            -o spdx-json=/workspace/sbom.spdx.json
+
+      - name: Image Visibility Scan (Trivy)
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v ${{ github.workspace }}:/workspace \
+            aquasec/trivy:0.55.0@sha256:35e972d4c97895711cb2de6594cc1774b61e6b9dc7661ef73a76dd649f006c8d \
+            image \
+            --severity HIGH,CRITICAL \
+            --format json \
+            --output /workspace/trivy-visibility-report.json \
+            dotwv:b06-scan
+
+      - name: Image Blocking Scan (Trivy)
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v ${{ github.workspace }}:/workspace \
+            aquasec/trivy:0.55.0@sha256:35e972d4c97895711cb2de6594cc1774b61e6b9dc7661ef73a76dd649f006c8d \
+            image \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            dotwv:b06-scan
+
+      - name: Upload SBOM
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sbom
+          path: sbom.spdx.json
+
+      - name: Upload Trivy Visibility Report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: trivy-visibility-report
+          path: trivy-visibility-report.json

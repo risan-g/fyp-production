@@ -30,12 +30,12 @@ function doomTransform(text: string): string {
 }
 
 async function fetchArtist(id: string) {
-  return await fetchSpotifyData(`https://api.spotify.com/v1/artists/${id}`);
+  return await fetchSpotifyData(`${process.env.SPOTIFY_API_BASE_URL || 'https://api.spotify.com'}/v1/artists/${id}`);
 }
 
 async function fetchAlbums(id: string) {
   return await fetchSpotifyData(
-    `https://api.spotify.com/v1/artists/${id}/albums?include_groups=album,single,compilation&limit=50`,
+    `${process.env.SPOTIFY_API_BASE_URL || 'https://api.spotify.com'}/v1/artists/${id}/albums?include_groups=album,single,compilation&limit=50`,
   );
 }
 
