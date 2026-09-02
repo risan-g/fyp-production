@@ -2,8 +2,8 @@ describe("Profile Management & Settings", () => {
   beforeEach(() => {
     // Logging in manually because the session cookie logic is still a bit flaky
     cy.visit("/sign-in");
-    cy.get('input[type="email"]').type("test9@fyp.com");
-    cy.get('input[type="password"]').type("Hello123@");
+    cy.get('input[type="email"]').type("user1@local.test");
+    cy.get('input[type="password"]').type("password123");
     cy.contains("button", "Sign In").click();
     
     // Need this wait because the redirect to dashboard sometimes lags on the dev server

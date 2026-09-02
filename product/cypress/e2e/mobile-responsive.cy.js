@@ -5,8 +5,8 @@ describe("Mobile Responsiveness & Viewport Sanity", () => {
     
     // Log in is required to see the rating action buttons on the album page
     cy.visit("/sign-in");
-    cy.get('input[type="email"]').type("test9@fyp.com");
-    cy.get('input[type="password"]').type("Hello123@");
+    cy.get('input[type="email"]').type("user1@local.test");
+    cy.get('input[type="password"]').type("password123");
     cy.contains("button", "Sign In").click();
     
     // Wait for the redirect to home to wrap up

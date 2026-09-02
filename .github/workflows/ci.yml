@@ -1,0 +1,136 @@
+name: DOTWV Verification CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  static_and_unit:
+    name: Static & Unit Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            product/package-lock.json
+
+      - name: Install Root Dependencies
+        run: npm ci
+
+      - name: Install Product Dependencies
+        working-directory: ./product
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./product
+        run: npm run lint
+
+      - name: Run TypeScript Compiler
+        working-directory: ./product
+        run: npx tsc --noEmit
+
+      - name: Run Jest Unit Tests
+        working-directory: ./product
+        run: npm test -- --runInBand
+
+      - name: Run Next.js Production Build
+        working-directory: ./product
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          DOTWV_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321"
+          DOTWV_PUBLIC_SUPABASE_ANON_KEY: "dummy-anon-key"
+          SUPABASE_SERVICE_ROLE_KEY: "dummy-service-key"
+          SPOTIFY_CLIENT_ID: "dummy-spotify-id"
+          SPOTIFY_CLIENT_SECRET: "dummy-spotify-secret"
+          SPOTIFY_API_BASE_URL: "http://127.0.0.1:3001"
+          SPOTIFY_ACCOUNTS_BASE_URL: "http://127.0.0.1:3001"
+        run: npm run build
+
+  database:
+    name: Database Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Install Root Dependencies
+        run: npm ci
+
+      - name: Start Local Supabase
+        run: npx supabase start
+
+      - name: Reset Local Database
+        run: npx supabase db reset
+
+      - name: Run pgTAP Tests
+        run: npx supabase test db
+
+      - name: Stop Local Supabase
+        if: always()
+        run: npx supabase stop
+
+  e2e:
+    name: Compose Full-Stack E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            product/package-lock.json
+
+      - name: Install Root Dependencies
+        run: npm ci
+
+      - name: Install Product Dependencies
+        working-directory: ./product
+        run: npm ci
+
+      - name: Verify Cypress Binary
+        working-directory: ./product
+        run: npx cypress verify
+
+      - name: Run Compose E2E Testing Workflow
+        run: ./scripts/compose-local.sh test
+
+      - name: Upload Cypress Screenshots (On Failure)
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cypress-screenshots
+          path: product/cypress/screenshots
+          retention-days: 7

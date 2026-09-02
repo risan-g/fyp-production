@@ -1,0 +1,47 @@
+name: dotwv-local
+
+services:
+  fixture:
+    image: node:22-alpine
+    container_name: dotwv-fixture-compose
+    environment:
+      - FIXTURE_HOST=0.0.0.0
+    volumes:
+      - ./scripts:/scripts:ro
+    command: ["node", "/scripts/fixture-server.js"]
+    networks:
+      - dotwv_internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/v1/artists/mock"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dotwv:compose-local
+    container_name: dotwv-app-compose
+    ports:
+      - "3000:3000"
+    env_file:
+      - ${DOTWV_ENV_FILE}
+    depends_on:
+      fixture:
+        condition: service_healthy
+    networks:
+      - dotwv_internal
+      - supabase_network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health/ready').then(r=>{if(!r.ok)process.exit(1);process.exit(0)}).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+
+networks:
+  dotwv_internal:
+    driver: bridge
+  supabase_network:
+    external: true
+    name: ${SUPABASE_NETWORK}

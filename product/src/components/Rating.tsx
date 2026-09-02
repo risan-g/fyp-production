@@ -247,7 +247,7 @@ export default function Rating({
     <div className="border-[3px] border-black bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)] p-6 flex flex-col items-center">
       <div className="mb-10 h-32 flex flex-col justify-center items-center">
         <label className="block text-[10px] text-black font-mono font-bold uppercase tracking-[0.2em] mb-4">
-          {user ? '&quot;YOUR RATING&quot;' : '""'}
+          {user ? '"YOUR RATING"' : '""'}
         </label>
         <div className="text-8xl font-black font-sans tracking-tighter text-black leading-none drop-shadow-md">
           {rating}
@@ -288,7 +288,7 @@ export default function Rating({
                   disabled={saving}
                   className="w-full py-4 bg-black text-white text-[10px] font-mono font-bold uppercase tracking-[0.2em] border-[3px] border-black shadow-[4px_4px_0px_rgba(255,0,0,1)] hover:bg-accent-red hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] disabled:opacity-50 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_rgba(255,0,0,1)] disabled:hover:bg-black transition-all cursor-pointer"
                 >
-                  {saving ? "SAVING..." : '&quot;CONFIRM RATING&quot;'}
+                  {saving ? "SAVING..." : '"CONFIRM RATING"'}
                 </button>
                 <button
                   onClick={handleCancel}
