@@ -6,8 +6,8 @@ describe("The Core Engagement Loop: Rating & Reviewing", () => {
     
     // Log in so we can actually touch the database with a review
     cy.visit("/sign-in");
-    cy.get('input[type="email"]').type("test9@fyp.com");
-    cy.get('input[type="password"]').type("Hello123@");
+    cy.get('input[type="email"]').type("user1@local.test");
+    cy.get('input[type="password"]').type("password123");
     cy.contains("button", "Sign In").click();
     
     // Wait for the redirect to home to wrap up
