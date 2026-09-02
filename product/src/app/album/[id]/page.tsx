@@ -21,7 +21,7 @@ export default async function AlbumPage({
 
   // Fetch the album details.
   const album = await fetchSpotifyData(
-    `https://api.spotify.com/v1/albums/${id}`,
+    `${process.env.SPOTIFY_API_BASE_URL || 'https://api.spotify.com'}/v1/albums/${id}`,
   );
 
 interface SpotifyArtistRef {

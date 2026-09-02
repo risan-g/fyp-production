@@ -5,10 +5,26 @@ import { createBrowserClient } from "@supabase/ssr";
  * This allows for client-side authentication and real-time database interactions.
  */
 export function createClient() {
-  return createBrowserClient(
-    // Environment variables are prefixed with NEXT_PUBLIC_ to make them
-    // accessible in the browser environment.
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  let supabaseUrl = "";
+  let supabaseAnonKey = "";
+
+  if (typeof window !== "undefined") {
+    const config = (window as unknown as { __DOTWV_CONFIG__?: { supabaseUrl?: string; supabaseAnonKey?: string } }).__DOTWV_CONFIG__ || {};
+    supabaseUrl = config.supabaseUrl || "";
+    supabaseAnonKey = config.supabaseAnonKey || "";
+  } else {
+    // Server-side rendering context
+    supabaseUrl = process.env.DOTWV_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    supabaseAnonKey = process.env.DOTWV_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+  }
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Missing required Supabase browser configuration: DOTWV_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL and Anon Key are required.");
+  }
+
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: {
+      name: 'sb-dotwv-auth-token',
+    },
+  });
 }
