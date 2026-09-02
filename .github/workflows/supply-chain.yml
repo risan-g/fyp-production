@@ -19,6 +19,13 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0 # Needed for full history secret scanning
+
+      - name: Gitleaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node 22
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -60,6 +67,7 @@ jobs:
             aquasec/trivy:0.55.0@sha256:35e972d4c97895711cb2de6594cc1774b61e6b9dc7661ef73a76dd649f006c8d \
             image \
             --severity HIGH,CRITICAL \
+            --ignorefile /workspace/.trivyignore \
             --format json \
             --output /workspace/trivy-visibility-report.json \
             dotwv:b06-scan
@@ -73,6 +81,7 @@ jobs:
             image \
             --severity HIGH,CRITICAL \
             --ignore-unfixed \
+            --ignorefile /workspace/.trivyignore \
             --exit-code 1 \
             dotwv:b06-scan
 

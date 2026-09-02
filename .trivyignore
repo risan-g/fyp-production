@@ -1,0 +1,4 @@
+# DOTWV Track B - Trivy Vulnerability Exception List
+# 
+# IMPORTANT: Any CVE listed here MUST have a corresponding entry and justification 
+# in docs/track-b/vulnerability-exceptions.md. Do not blindly ignore vulnerabilities.
